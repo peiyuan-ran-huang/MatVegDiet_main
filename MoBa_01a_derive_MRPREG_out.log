@@ -1,0 +1,3167 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      17.0
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2021 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-STATA-PC        https://www.stata.com
+                                   979-696-4600        stata@stata.com
+
+Stata license: 40-user 32-core network, expiring 21 Mar 2025
+Serial number: 501809321456
+  Licensed to: Universitetet i Oslo
+               Universitetet i Oslo
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+
+Running C:\PROGRA~1\Stata17\sysprofile.do ...
+
+. do M:/p582-peiyuanh/MainAssocAnalysis/MoBa_01a_derive_MRPREG_out.do 
+
+. /****************************************************************************
+> ***
+> ADAPTED FROM: "1_generating_data_pheno_from_raw_data.do" by Dr Gemma Clayton
+> *****************************************************************************
+> **/
+. 
+. /************************************************************************
+> 
+> All derivations based on the 'vars_definition' tab in the outcomes defintion 
+> excel spreadsheet of MR preg phenotypes. Then the Moba tab has mostly been up
+> dated based on this.
+> 
+> Then separate moba documentation is here:
+> N:\durable\Documentation
+> 
+> **************************************************************
+> */
+. clear matrix
+
+. clear mata
+
+. set maxvar 10000
+
+
+. 
+. **This datatset includes MBRN and Q1-4
+. *use "N:\durable\RAW\MoBa_Phenotype\STATA\PDB2552_MoBa_MBRN.dta", clear
+. 
+. **merge with livebirth variable
+. *merge 1:1 PREG_ID_2552 BARN_NR using"M:\p582-gemmalc\phenotype\livebirth_dat
+> aset"
+. *drop _merge 
+. 
+. use "N:\durable\projects\Ran_MoBa_var\dat_pheno_select.dta", clear
+
+. 
+. tab DODKAT, m
+
+   DODKAT_G |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |    115,298       99.04       99.04
+          2 |        773        0.66       99.71
+          3 |         83        0.07       99.78
+          . |        257        0.22      100.00
+------------+-----------------------------------
+      Total |    116,411      100.00
+
+. gen livebirth=1 if DODKAT_G==1 | DODKAT_G==.
+(856 missing values generated)
+
+. replace livebirth=0 if DODKAT_G==2 | DODKAT_G==3
+(856 real changes made)
+
+. 
+. drop if livebirth == 0
+(856 observations deleted)
+
+. tab livebirth, m
+
+  livebirth |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |    115,555      100.00      100.00
+------------+-----------------------------------
+      Total |    115,555      100.00
+
+. * All samples are livebirths now
+. 
+. **************************************************************************
+. **RESTRICT TO CORRECT POPULATION
+. **************************************************************************
+. 
+. ** multiple pregnancy ids from twins/trips
+. tab FLERFODSEL, m
+
+ FLERFODSEL |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     30,229       26.16       26.16
+          . |     85,326       73.84      100.00
+------------+-----------------------------------
+      Total |    115,555      100.00
+
+. 
+. ** multiple mat ids from multiple pregnancies over time
+. tab PLURAL
+
+     PLURAL |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     85,069       73.78       73.78
+          2 |     28,852       25.02       98.81
+          3 |      1,377        1.19      100.00
+------------+-----------------------------------
+      Total |    115,298      100.00
+
+. 
+. ** We exclude multiple pregnancies
+. gen from_multiplebirth=1 if FLERFODSEL==1
+(85,326 missing values generated)
+
+. replace from_multiplebirth=0 if FLERFODSEL==.
+(85,326 real changes made)
+
+. 
+. preserve
+
+. keep if from_multiplebirth==1
+(85,326 observations deleted)
+
+. keep PREG_ID_2552 M_ID_2552 F_ID_2552
+
+. cd "N:\durable\projects\Ran_MoBa_var\"
+N:\durable\projects\Ran_MoBa_var
+
+. export excel using multiplebirthids, firstrow(var) replace 
+file multiplebirthids.xls saved
+
+. restore
+
+. 
+. 
+. drop if FLERFODSEL==1
+(30,229 observations deleted)
+
+. 
+. 
+. 
+. **RANDOMLY SAMPLE TO INCLUDE 1 MOTHER ID
+. codebook M_ID_2552, compact
+
+Variable     Obs Unique  Mean  Min  Max  Label
+-------------------------------------------------------------------------------
+M_ID_2552  85326  73869     .    .    .  
+-------------------------------------------------------------------------------
+
+. set seed 4629602
+
+. sample 1, count by(M_ID_2552)
+(11,457 observations deleted)
+
+. 
+. 
+. **Variable needed to indicate live births of the index preganncy (meeded for 
+> all except previous miscarraiges and stillbirths)
+. **MARIA REQ DODKAT 10/06/21 (STILL NO UPDATE 17/01/21)
+. 
+. count if PREG_ID_2552!=.
+  73,869
+
+. count if M_ID_2552!=""
+  73,869
+
+. count if F_ID_2552!=""
+  62,528
+
+. 
+. *offspring sex
+. tab KJONN
+
+      KJONN |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |          1        0.00        0.00
+          1 |     37,696       51.19       51.19
+          2 |     35,947       48.81      100.00
+------------+-----------------------------------
+      Total |     73,644      100.00
+
+. tab DD12
+
+       DD12 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     32,811       51.02       51.02
+          2 |     31,496       48.98      100.00
+------------+-----------------------------------
+      Total |     64,307      100.00
+
+. 
+. tab DODKAT_G 
+
+   DODKAT_G |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     73,644      100.00      100.00
+------------+-----------------------------------
+      Total |     73,644      100.00
+
+. 
+. 
+. tab KJONN DD12, m
+
+           |               DD12
+     KJONN |         1          2          . |     Total
+-----------+---------------------------------+----------
+         0 |         1          0          0 |         1 
+         1 |    32,752         97      4,847 |    37,696 
+         2 |        12     31,359      4,576 |    35,947 
+         . |        46         40        139 |       225 
+-----------+---------------------------------+----------
+     Total |    32,811     31,496      9,562 |    73,869 
+
+. * 1=male, 2=female
+. *1 boy, 2=girl
+. gen offspring_sex=KJONN if KJONN==1 | KJONN==2
+(226 missing values generated)
+
+. replace offspring_sex=1 if DD12==1 & offspring_sex==.
+(47 real changes made)
+
+. replace offspring_sex=2 if DD12==2 & offspring_sex==.
+(40 real changes made)
+
+. 
+. tab offspring_sex, m
+
+offspring_s |
+         ex |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     37,743       51.09       51.09
+          2 |     35,987       48.72       99.81
+          . |        139        0.19      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. label define offspring_sex 1 "Male" 2 "Female"
+
+. label values offspring_sex offspring_sex
+
+. 
+. *Define age at menarche (needed for sporadic miscarraige and recuurent miscar
+> raige)
+. 
+. gen age_menarche=AA12
+(1,384 missing values generated)
+
+. sum age_menarche, d
+
+                        age_menarche
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%           10              1
+ 5%           11              1
+10%           11              1       Obs              72,485
+25%           12              1       Sum of wgt.      72,485
+
+50%           13                      Mean           13.08916
+                        Largest       Std. dev.      2.628678
+75%           14             94
+90%           15             96       Variance       6.909949
+95%           15             96       Skewness       19.61543
+99%           17             96       Kurtosis       549.8878
+
+. *top and bottom 1% look too extreme but we dont use those anyway
+. 
+. 
+. 
+. **************************************************************************
+. **OUTCOMES COLLECTED RETROSPECTIVELY i.e. on previous pregnancies
+. **************************************************************************
+. 
+. **miscarriage
+. cap drop abort*
+
+. gen abort1=1 if  AA95==2 & (AA96>=2 & AA96<=22)
+(66,184 missing values generated)
+
+. gen abort2=1 if  AA101==2 & (AA102>=2 & AA102<=22)
+(68,295 missing values generated)
+
+. gen abort3=1 if  AA107==2 & (AA108>=2 & AA108<=22)
+(70,695 missing values generated)
+
+. gen abort4=1 if  AA113==2 & (AA114>=2 & AA114<=22)
+(72,370 missing values generated)
+
+. gen abort5=1 if  AA119==2 & (AA120>=2 & AA120<=22)
+(73,200 missing values generated)
+
+. gen abort6=1 if  AA125==2 & (AA126>=2 & AA126<=22)
+(73,590 missing values generated)
+
+. gen abort7=1 if  AA131==2 & (AA132>=2 & AA132<=22)
+(73,760 missing values generated)
+
+. gen abort8=1 if  AA137==2 & (AA138>=2 & AA138<=22)
+(73,815 missing values generated)
+
+. gen abort9=1 if  AA143==2 & (AA144>=2 & AA144<=22)
+(73,845 missing values generated)
+
+. gen abort10=1 if  AA149==2 & (AA150>=2 & AA150<=22)
+(73,856 missing values generated)
+
+. tab1 abort1 abort2 abort3 abort4 abort5 abort6 abort7 abort8 abort9 abort10
+
+-> tabulation of abort1  
+
+     abort1 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      7,685      100.00      100.00
+------------+-----------------------------------
+      Total |      7,685      100.00
+
+-> tabulation of abort2  
+
+     abort2 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      5,574      100.00      100.00
+------------+-----------------------------------
+      Total |      5,574      100.00
+
+-> tabulation of abort3  
+
+     abort3 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      3,174      100.00      100.00
+------------+-----------------------------------
+      Total |      3,174      100.00
+
+-> tabulation of abort4  
+
+     abort4 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      1,499      100.00      100.00
+------------+-----------------------------------
+      Total |      1,499      100.00
+
+-> tabulation of abort5  
+
+     abort5 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        669      100.00      100.00
+------------+-----------------------------------
+      Total |        669      100.00
+
+-> tabulation of abort6  
+
+     abort6 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        279      100.00      100.00
+------------+-----------------------------------
+      Total |        279      100.00
+
+-> tabulation of abort7  
+
+     abort7 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        109      100.00      100.00
+------------+-----------------------------------
+      Total |        109      100.00
+
+-> tabulation of abort8  
+
+     abort8 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         54      100.00      100.00
+------------+-----------------------------------
+      Total |         54      100.00
+
+-> tabulation of abort9  
+
+     abort9 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         24      100.00      100.00
+------------+-----------------------------------
+      Total |         24      100.00
+
+-> tabulation of abort10  
+
+    abort10 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         13      100.00      100.00
+------------+-----------------------------------
+      Total |         13      100.00
+
+. cap drop number_misc
+
+. egen number_misc=rowtotal(abort1 abort2 abort3 abort4 abort5 abort6 abort7 ab
+> ort8 abort9 abort10)
+
+. tab number_misc
+
+number_misc |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,587       80.67       80.67
+          1 |     10,915       14.78       95.44
+          2 |      2,426        3.28       98.73
+          3 |        643        0.87       99.60
+          4 |        182        0.25       99.84
+          5 |         74        0.10       99.94
+          6 |         21        0.03       99.97
+          7 |         13        0.02       99.99
+          8 |          3        0.00       99.99
+          9 |          5        0.01      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. cap drop misc_all
+
+. gen misc_all=0 if number_misc==0
+(14,282 missing values generated)
+
+. replace misc_all=1 if number_misc>=1 & number_misc<.
+(14,282 real changes made)
+
+. tab misc_all
+
+   misc_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,587       80.67       80.67
+          1 |     14,282       19.33      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. 
+. 
+. 
+. **stillbirth
+. cap drop stillbirth*
+
+. gen stillbirth1=1 if  AA95==2 & (AA96>22 & AA96<=43)
+(73,666 missing values generated)
+
+. gen stillbirth2=1 if  AA101==2 & (AA102>22 & AA102<=43)
+(73,753 missing values generated)
+
+. gen stillbirth3=1 if  AA107==2 & (AA108>22 & AA108<=43)
+(73,825 missing values generated)
+
+. gen stillbirth4=1 if  AA113==2 & (AA114>22 & AA114<=43)
+(73,845 missing values generated)
+
+. gen stillbirth5=1 if  AA119==2 & (AA120>22 & AA120<=43)
+(73,862 missing values generated)
+
+. gen stillbirth6=1 if  AA125==2 & (AA126>22 & AA126<=43)
+(73,865 missing values generated)
+
+. gen stillbirth7=1 if  AA131==2 & (AA132>22 & AA132<=43)
+(73,868 missing values generated)
+
+. gen stillbirth8=1 if  AA137==2 & (AA138>22 & AA138<=43)
+(73,867 missing values generated)
+
+. gen stillbirth9=1 if  AA143==2 & (AA144>22 & AA144<=43)
+(73,869 missing values generated)
+
+. gen stillbirth10=1 if  AA149==2 & (AA150>22 & AA150<=43)
+(73,869 missing values generated)
+
+. tab1 stillbirth1 stillbirth2 stillbirth3 stillbirth4 stillbirth5 stillbirth6 
+> stillbirth7 stillbirth8 stillbirth9 stillbirth10
+
+-> tabulation of stillbirth1  
+
+stillbirth1 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        203      100.00      100.00
+------------+-----------------------------------
+      Total |        203      100.00
+
+-> tabulation of stillbirth2  
+
+stillbirth2 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        116      100.00      100.00
+------------+-----------------------------------
+      Total |        116      100.00
+
+-> tabulation of stillbirth3  
+
+stillbirth3 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         44      100.00      100.00
+------------+-----------------------------------
+      Total |         44      100.00
+
+-> tabulation of stillbirth4  
+
+stillbirth4 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         24      100.00      100.00
+------------+-----------------------------------
+      Total |         24      100.00
+
+-> tabulation of stillbirth5  
+
+stillbirth5 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |          7      100.00      100.00
+------------+-----------------------------------
+      Total |          7      100.00
+
+-> tabulation of stillbirth6  
+
+stillbirth6 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |          4      100.00      100.00
+------------+-----------------------------------
+      Total |          4      100.00
+
+-> tabulation of stillbirth7  
+
+stillbirth7 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |          1      100.00      100.00
+------------+-----------------------------------
+      Total |          1      100.00
+
+-> tabulation of stillbirth8  
+
+stillbirth8 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |          2      100.00      100.00
+------------+-----------------------------------
+      Total |          2      100.00
+
+-> tabulation of stillbirth9  
+no observations
+
+-> tabulation of stillbirth10  
+no observations
+
+. cap drop number_stillbirths
+
+. egen number_stillbirths=rowtotal(stillbirth1 stillbirth2  stillbirth3 stillbi
+> rth4 stillbirth5 stillbirth6 stillbirth7 stillbirth8 stillbirth9 stillbirth10
+> )
+
+. tab number_stillbirths
+
+number_stil |
+    lbirths |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     73,473       99.46       99.46
+          1 |        391        0.53       99.99
+          2 |          5        0.01      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. cap drop sb_all
+
+. gen sb_all=0 if number_stillbirths==0
+(396 missing values generated)
+
+. replace sb_all=1 if number_stillbirths>=1 & number_stillbirths<.
+(396 real changes made)
+
+. tab sb_all
+
+     sb_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     73,473       99.46       99.46
+          1 |        396        0.54      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. tab misc_all sb_all
+
+           |        sb_all
+  misc_all |         0          1 |     Total
+-----------+----------------------+----------
+         0 |    59,320        267 |    59,587 
+         1 |    14,153        129 |    14,282 
+-----------+----------------------+----------
+     Total |    73,473        396 |    73,869 
+
+. 
+. 
+. **misc_subsamp - Controls: no miscarriages or stillbirths
+. tab misc_all
+
+   misc_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,587       80.67       80.67
+          1 |     14,282       19.33      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. gen misc_subsamp=misc_all
+
+. replace misc_subsamp=. if sb_all==1
+(396 real changes made, 396 to missing)
+
+. 
+. 
+. *Sporadic miscarriage (1 or 2 vs 0)
+. tab number_misc
+
+number_misc |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,587       80.67       80.67
+          1 |     10,915       14.78       95.44
+          2 |      2,426        3.28       98.73
+          3 |        643        0.87       99.60
+          4 |        182        0.25       99.84
+          5 |         74        0.10       99.94
+          6 |         21        0.03       99.97
+          7 |         13        0.02       99.99
+          8 |          3        0.00       99.99
+          9 |          5        0.01      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. gen s_misc_all=1 if (number_misc==1 | number_misc==2) & number_misc!=.
+(60,528 missing values generated)
+
+. replace s_misc_all=0 if number_misc==0
+(59,587 real changes made)
+
+. 
+. *Sporadic miscarraige (excludes SB)
+. gen s_misc_subsamp=s_misc_all
+(941 missing values generated)
+
+. replace s_misc_subsamp=. if sb_all==1
+(380 real changes made, 380 to missing)
+
+. replace s_misc_subsamp=. if (age_menarche<9 | age_menarche>17) & age_menarche
+> !=.
+(328 real changes made, 328 to missing)
+
+. 
+. *Recurrent miscarraige (Cases: 3 or more miscarriages; Controls: no miscarria
+> ges)
+. gen r_misc_all=1 if (number_misc>=3 & number_misc!=.)
+(72,928 missing values generated)
+
+. replace r_misc_all=0 if number_misc==0
+(59,587 real changes made)
+
+. 
+. *Recurrent miscarraige (excludes SB)
+. gen r_misc_subsamp=r_misc_all
+(13,341 missing values generated)
+
+. replace r_misc_subsamp=. if sb_all==1
+(283 real changes made, 283 to missing)
+
+. replace r_misc_subsamp=. if (age_menarche<9 | age_menarche>17) & age_menarche
+> !=.
+(270 real changes made, 270 to missing)
+
+. 
+. **SB subsamp
+. *Controls: no miscarriages or stillbirths
+. tab sb_all
+
+     sb_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     73,473       99.46       99.46
+          1 |        396        0.54      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. gen sb_subsamp=sb_all
+
+. replace sb_subsamp=. if misc_all==1
+(14,282 real changes made, 14,282 to missing)
+
+. 
+. tab sb_subsamp, m
+
+ sb_subsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,320       80.30       80.30
+          1 |        267        0.36       80.67
+          . |     14,282       19.33      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. tab misc_subsamp, m
+
+misc_subsam |
+          p |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,320       80.30       80.30
+          1 |     14,153       19.16       99.46
+          . |        396        0.54      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. **Pregnancy loss pregloss: Pregnancy loss (ie miscarriage or stillbirth) Case
+> s: one or more pregnancy losses Controls: no pregnancy loss
+. gen pregloss=1 if misc_all==1 | sb_all==1
+(59,320 missing values generated)
+
+. replace pregloss=0 if misc_all==0 & sb_all==0
+(59,320 real changes made)
+
+. 
+. **CHECK
+. tab pregloss if misc_subsamp==0
+
+   pregloss |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,320      100.00      100.00
+------------+-----------------------------------
+      Total |     59,320      100.00
+
+. tab misc_subsamp if pregloss==1
+
+misc_subsam |
+          p |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     14,153      100.00      100.00
+------------+-----------------------------------
+      Total |     14,153      100.00
+
+. tab misc_subsamp if pregloss==0
+
+misc_subsam |
+          p |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,320      100.00      100.00
+------------+-----------------------------------
+      Total |     59,320      100.00
+
+. 
+. tab pregloss misc_subsamp, m
+
+           |           misc_subsamp
+  pregloss |         0          1          . |     Total
+-----------+---------------------------------+----------
+         0 |    59,320          0          0 |    59,320 
+         1 |         0     14,153        396 |    14,549 
+-----------+---------------------------------+----------
+     Total |    59,320     14,153        396 |    73,869 
+
+. 
+. tab sb_subsamp if pregloss==1
+
+ sb_subsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        267      100.00      100.00
+------------+-----------------------------------
+      Total |        267      100.00
+
+. tab sb_subsamp if pregloss==0
+
+ sb_subsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,320      100.00      100.00
+------------+-----------------------------------
+      Total |     59,320      100.00
+
+. tab pregloss sb_subsamp, m
+
+           |            sb_subsamp
+  pregloss |         0          1          . |     Total
+-----------+---------------------------------+----------
+         0 |    59,320          0          0 |    59,320 
+         1 |         0        267     14,282 |    14,549 
+-----------+---------------------------------+----------
+     Total |    59,320        267     14,282 |    73,869 
+
+. 
+. tab sb_subsamp, m
+
+ sb_subsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,320       80.30       80.30
+          1 |        267        0.36       80.67
+          . |     14,282       19.33      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. tab misc_subsamp, m
+
+misc_subsam |
+          p |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,320       80.30       80.30
+          1 |     14,153       19.16       99.46
+          . |        396        0.54      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. **************************************************************************
+. **OUTCOMES RELATED TO THE INDEX PREGNANCY (but some use previous info)
+. **************************************************************************
+. **STILL NEED TO EXCLUDE THOSE THAT WERE NOT A LIVEBIRTH**
+. tab DODKAT_G, m
+
+   DODKAT_G |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     73,644       99.70       99.70
+          . |        225        0.30      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. sum SVLEN if DODKAT_G==1, d
+
+                            SVLEN
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%           33             15
+ 5%           37             15
+10%           38             20       Obs              73,334
+25%           39             21       Sum of wgt.      73,334
+
+50%           40                      Mean           39.47506
+                        Largest       Std. dev.      1.838627
+75%           41             46
+90%           41             46       Variance        3.38055
+95%           42             47       Skewness      -2.211783
+99%           42             47       Kurtosis       14.29207
+
+. sum SVLEN if DODKAT_G==2, d
+
+                            SVLEN
+-------------------------------------------------------------
+no observations
+
+. sum SVLEN if DODKAT_G==3, d
+
+                            SVLEN
+-------------------------------------------------------------
+no observations
+
+. sum SVLEN if DODKAT_G==., d
+
+                            SVLEN
+-------------------------------------------------------------
+no observations
+
+. 
+. tab SVLEN if DODKAT_G==2
+no observations
+
+. tab SVLEN if DODKAT_G==2 & SVLEN>=22
+no observations
+
+. gen sb_index_all=1 if DODKAT_G==2 & SVLEN>=22
+(73,869 missing values generated)
+
+. replace sb_index_all=0 if sb_index_all==.
+(73,869 real changes made)
+
+. 
+. tab sb_index_all
+
+sb_index_al |
+          l |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     73,869      100.00      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. gen sb_index_subsamp=sb_index_all
+
+. replace sb_index_subsamp=. if DODKAT_G!=1 & sb_index_all==0
+(225 real changes made, 225 to missing)
+
+. gen sb_index_subsamp2=sb_index_subsamp
+(225 missing values generated)
+
+. replace sb_index_subsamp2=. if (DODKAT_G!=1 | pregloss==1) & sb_index_all==0
+(14,493 real changes made, 14,493 to missing)
+
+. 
+. 
+. tab sb_index_subsamp
+
+sb_index_su |
+      bsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     73,644      100.00      100.00
+------------+-----------------------------------
+      Total |     73,644      100.00
+
+. 
+. gen misc_index_all=1 if DODKAT_G==2 & SVLEN<22
+(73,869 missing values generated)
+
+. replace misc_index_all=0 if misc_index_all==.
+(73,869 real changes made)
+
+. 
+. gen misc_index_subsamp=misc_index_all
+
+. 
+. replace misc_index_subsamp=. if DODKAT_G!=1 & misc_index_all==0
+(225 real changes made, 225 to missing)
+
+. 
+. gen misc_index_subsamp2=misc_index_subsamp
+(225 missing values generated)
+
+. replace misc_index_subsamp2=. if (DODKAT_G!=1 | pregloss==1) & misc_index_all
+> ==0
+(14,493 real changes made, 14,493 to missing)
+
+. 
+. tab sb_index_all
+
+sb_index_al |
+          l |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     73,869      100.00      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. tab sb_index_subsamp
+
+sb_index_su |
+      bsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     73,644      100.00      100.00
+------------+-----------------------------------
+      Total |     73,644      100.00
+
+. tab sb_index_subsamp2
+
+sb_index_su |
+     bsamp2 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,151      100.00      100.00
+------------+-----------------------------------
+      Total |     59,151      100.00
+
+. 
+. tab misc_index_all
+
+misc_index_ |
+        all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     73,869      100.00      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. tab misc_index_subsamp
+
+misc_index_ |
+    subsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     73,644      100.00      100.00
+------------+-----------------------------------
+      Total |     73,644      100.00
+
+. tab misc_index_subsamp2
+
+misc_index_ |
+   subsamp2 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     59,151      100.00      100.00
+------------+-----------------------------------
+      Total |     59,151      100.00
+
+. 
+. 
+. 
+. 
+. 
+. tab SVLEN if DODKAT_G==2 & SVLEN<22
+no observations
+
+. 
+. tab misc_all if DODKAT_G==.
+
+   misc_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |        172       76.44       76.44
+          1 |         53       23.56      100.00
+------------+-----------------------------------
+      Total |        225      100.00
+
+. tab pregloss if DODKAT_G==.
+
+   pregloss |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |        169       75.11       75.11
+          1 |         56       24.89      100.00
+------------+-----------------------------------
+      Total |        225      100.00
+
+. 
+. *gen livebirth_temp=1 if DODKAT_G==1 | DODKAT_G==2 | DODKAT_G==3
+. *replace livebirth_temp=0 if livebirth_temp==.
+. /*
+> gen livebirth_temp=0 if SVLEN<22
+> replace livebirth_temp=1 if livebirth_temp==.
+> replace livebirth_temp=0 if KJONN==0 | KJONN==3
+> 
+> tab DODKAT_G livebirth_temp, m
+> sum SVLEN if livebirth_temp==0
+> sum SVLEN if livebirth_temp==1, d
+> */
+. **need preterm birth and livebirth as exclusion criteria
+. cap drop pretb_all
+
+. gen pretb_all=.
+(73,869 missing values generated)
+
+. replace pretb_all=1 if SVLEN <37
+(3,574 real changes made)
+
+. replace pretb_all=0 if SVLEN >=37 & SVLEN <42
+(64,086 real changes made)
+
+. replace pretb_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. *BW
+. sum VEKT
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+        VEKT |     73,603    3590.854    561.7057        290       6320
+
+. gen bw=VEKT
+(266 missing values generated)
+
+. 
+. **STILL NEED TO EXCLUDE THOSE THAT WERE NOT A LIVEBIRTH**
+. replace bw=. if livebirth==0
+(0 real changes made)
+
+. 
+. * BW in sex-specific z-score
+. tab KJONN, mis
+
+      KJONN |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |          1        0.00        0.00
+          1 |     37,696       51.03       51.03
+          2 |     35,947       48.66       99.70
+          . |        225        0.30      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. egen zbw_boys = std(bw) if KJONN==1
+(36,188 missing values generated)
+
+. sum zbw_boys
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+    zbw_boys |     37,681   -1.83e-09           1  -5.889845   4.674062
+
+. egen zbw_girls = std(bw) if KJONN==2
+(37,947 missing values generated)
+
+. sum zbw_girls
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+   zbw_girls |     35,922    2.18e-10           1   -5.80479   4.926385
+
+. egen zbw_all = rowfirst(zbw_boys zbw_girls)
+(266 missing values generated)
+
+. 
+. list bw if zbw_all<-5
+
+       +-----+
+       |  bw |
+       |-----|
+ 1267. | 760 |
+ 1377. | 770 |
+ 1638. | 778 |
+ 2511. | 593 |
+ 3000. | 549 |
+       |-----|
+ 5423. | 705 |
+ 7087. | 710 |
+ 8063. | 770 |
+ 8066. | 435 |
+ 8368. | 580 |
+       |-----|
+ 8484. | 784 |
+ 9021. | 750 |
+ 9078. | 460 |
+ 9875. | 540 |
+10137. | 550 |
+       |-----|
+10591. | 736 |
+11124. | 760 |
+12228. | 710 |
+13236. | 790 |
+13855. | 650 |
+       |-----|
+14583. | 518 |
+14955. | 558 |
+16363. | 592 |
+16458. | 680 |
+17206. | 770 |
+       |-----|
+17328. | 600 |
+20477. | 517 |
+20665. | 424 |
+21054. | 668 |
+21384. | 800 |
+       |-----|
+24208. | 502 |
+24246. | 660 |
+24404. | 650 |
+26412. | 697 |
+27228. | 450 |
+       |-----|
+27333. | 645 |
+28843. | 612 |
+31218. | 660 |
+34445. | 590 |
+34482. | 660 |
+       |-----|
+34639. | 474 |
+35424. | 747 |
+37174. | 518 |
+37213. | 802 |
+38317. | 800 |
+       |-----|
+38404. | 750 |
+39065. | 620 |
+40711. | 795 |
+41369. | 715 |
+41665. | 778 |
+       |-----|
+42164. | 605 |
+43781. | 730 |
+44936. | 598 |
+46583. | 550 |
+46619. | 570 |
+       |-----|
+48445. | 800 |
+49775. | 738 |
+50262. | 795 |
+50570. | 448 |
+51177. | 705 |
+       |-----|
+51236. | 656 |
+52620. | 632 |
+52934. | 505 |
+53358. | 777 |
+53887. | 755 |
+       |-----|
+54232. | 730 |
+54421. | 680 |
+54537. | 290 |
+60729. | 685 |
+61370. | 690 |
+       |-----|
+61383. | 640 |
+61420. | 410 |
+62842. | 705 |
+63990. | 590 |
+66131. | 660 |
+       |-----|
+67697. | 554 |
+68451. | 672 |
+69493. | 750 |
+69660. | 534 |
+72060. | 525 |
+       |-----|
+73841. | 365 |
+       +-----+
+
+. replace zbw_all=. if zbw_all<-5 | zbw_all>5
+(81 real changes made, 81 to missing)
+
+. replace bw=. if zbw_all<-5 | zbw_all>5
+(81 real changes made, 81 to missing)
+
+. sum bw
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+          bw |     73,522    3594.103     553.401        800       6320
+
+. 
+. sum SVLEN if livebirth==0, d
+
+                            SVLEN
+-------------------------------------------------------------
+no observations
+
+. sum SVLEN if livebirth==1, d
+
+                            SVLEN
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%           33             15
+ 5%           37             15
+10%           38             20       Obs              73,334
+25%           39             21       Sum of wgt.      73,334
+
+50%           40                      Mean           39.47506
+                        Largest       Std. dev.      1.838627
+75%           41             46
+90%           41             46       Variance        3.38055
+95%           42             47       Skewness      -2.211783
+99%           42             47       Kurtosis       14.29207
+
+. tab livebirth, m
+
+  livebirth |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     73,869      100.00      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. *TEMP UNTIL WE GET ACTUAL LIVEBIRTH VAR, BUT ASSUME THOSE BORN LESS THAN 24 W
+> EEKS ARE NOT LIVEBIRTHS AND THEREFORE NOT INC IN BW
+. 
+. 
+. *standardise after subsamp of bw
+. gen bw_subsamp=bw
+(347 missing values generated)
+
+. replace bw_subsamp=. if pretb_all==1
+(3,495 real changes made, 3,495 to missing)
+
+. *then standardise
+. egen zbw_subsamp_boys = std(bw_subsamp) if KJONN==1
+(38,072 missing values generated)
+
+. sum zbw_subsamp_boys
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+zbw_subsam~s |     35,797    2.91e-09           1  -5.485554   5.308512
+
+. egen zbw_subsamp_girls = std(bw_subsamp) if KJONN==2
+(39,639 missing values generated)
+
+. sum zbw_subsamp_girls
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+zbw_subsa~ls |     34,230   -7.75e-10           1  -5.516784   5.554864
+
+. egen zbw_subsamp = rowfirst(zbw_subsamp_boys zbw_subsamp_girls)
+(3,842 missing values generated)
+
+. replace zbw_subsamp=. if zbw_subsamp<-5 | zbw_subsamp>5
+(10 real changes made, 10 to missing)
+
+. 
+. sum LENGDE
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+      LENGDE |     70,915    50.34183    2.469599          4         90
+
+. tab LENGDE
+
+     LENGDE |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          4 |          3        0.00        0.00
+          5 |          4        0.01        0.01
+          9 |          1        0.00        0.01
+         10 |          1        0.00        0.01
+         17 |          1        0.00        0.01
+         23 |          1        0.00        0.02
+         24 |          1        0.00        0.02
+         27 |          3        0.00        0.02
+         28 |          3        0.00        0.03
+         29 |          6        0.01        0.03
+         30 |         19        0.03        0.06
+         31 |         14        0.02        0.08
+         32 |         23        0.03        0.11
+         33 |         29        0.04        0.15
+         34 |         36        0.05        0.20
+         35 |         29        0.04        0.25
+         36 |         48        0.07        0.31
+         37 |         25        0.04        0.35
+         38 |         31        0.04        0.39
+         39 |         42        0.06        0.45
+         40 |         70        0.10        0.55
+         41 |         83        0.12        0.67
+         42 |        131        0.18        0.85
+         43 |        183        0.26        1.11
+         44 |        303        0.43        1.54
+         45 |        654        0.92        2.46
+         46 |      1,353        1.91        4.37
+         47 |      2,965        4.18        8.55
+         48 |      5,694        8.03       16.58
+         49 |      9,583       13.51       30.09
+         50 |     14,926       21.05       51.14
+         51 |     13,406       18.90       70.04
+         52 |     10,540       14.86       84.91
+         53 |      6,156        8.68       93.59
+         54 |      2,884        4.07       97.65
+         55 |      1,186        1.67       99.33
+         56 |        347        0.49       99.82
+         57 |         91        0.13       99.94
+         58 |         22        0.03       99.97
+         59 |         11        0.02       99.99
+         60 |          1        0.00       99.99
+         61 |          3        0.00      100.00
+         62 |          1        0.00      100.00
+         65 |          1        0.00      100.00
+         90 |          1        0.00      100.00
+------------+-----------------------------------
+      Total |     70,915      100.00
+
+. gen birthlength=LENGDE
+(2,954 missing values generated)
+
+. 
+. replace birthlength=. if livebirth==0
+(0 real changes made)
+
+. label var birthlength "offspring birth length (cm)"
+
+. 
+. egen birthlength_zscore = std(birthlength)
+(2,954 missing values generated)
+
+. 
+. label var birthlength_zscore "Z-score: offspring birth length"
+
+. 
+. 
+. *Ponderal index (PI) was calculated as birth weight in kilograms divided by t
+> he cube of birth length in metres (kg/m3).
+. *Ponderal index – birthweight (kg) divided by the birth length (m) cubed
+. 
+. 
+. 
+. gen blm = birthlength/100
+(2,954 missing values generated)
+
+. sum bw
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+          bw |     73,522    3594.103     553.401        800       6320
+
+. gen lcub = blm ^ 3
+(2,954 missing values generated)
+
+. gen birthweight_kg=bw/1000
+(347 missing values generated)
+
+. gen ponderal = birthweight_kg / lcub
+(3,002 missing values generated)
+
+. 
+. label var ponderal "offspring ponderal index" 
+
+. 
+. drop lcub blm birthweight_kg
+
+. 
+. 
+. 
+. egen ponderal_zscore = std(ponderal)
+(3,002 missing values generated)
+
+. 
+. label var ponderal_zscore "Z-score: Ponderal index"
+
+. 
+. 
+. 
+. 
+. **WILL NEED TO REPLACE WITH MISSING FOR ALL IN THIS SECTION**
+. 
+. **HDP
+. tab HYPERTENSJON_KRONISK
+
+HYPERTENSJO |
+  N_KRONISK |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        373      100.00      100.00
+------------+-----------------------------------
+      Total |        373      100.00
+
+. cap drop HDP
+
+. gen HDP=0 if MORS_ALDER!=. /*& HYPERTENSJON_KRONISK!=1*/
+(225 missing values generated)
+
+. replace HDP=1 if HYPERTENSJON_ALENE==1 | (CC114>=140 & CC114<. ) | (CC115>=90
+>  & CC115<.) | CC616==1 | CC617==1 | CC618==1 | CC619==1 | CC620==1 | DD434==1
+(9,322 real changes made)
+
+. replace HDP=2 if PREEKL==1 | PREEKL==2 | PREEKL==3 | EKLAMPSI==1 |  HELLP==1 
+> | PREEKLTIDL==1
+(2,857 real changes made)
+
+. tab HDP, mis
+
+        HDP |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     63,659       86.18       86.18
+          1 |      7,147        9.68       95.85
+          2 |      2,857        3.87       99.72
+          . |        206        0.28      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. 
+. *control includes pre existing hypertension 
+. gen hdp_all=1 if HDP==1 | HDP==2
+(63,865 missing values generated)
+
+. replace hdp_all=0 if HDP==0
+(63,659 real changes made)
+
+. replace hdp_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. *control excludes pre existing hypertension 
+. gen hdp_subsamp=1 if HDP==1 | HDP==2
+(63,865 missing values generated)
+
+. replace hdp_subsamp=0 if HDP==0 & HYPERTENSJON_KRONISK!=1
+(63,554 real changes made)
+
+. replace hdp_subsamp=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab hdp_subsamp
+
+hdp_subsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     63,554       86.40       86.40
+          1 |     10,004       13.60      100.00
+------------+-----------------------------------
+      Total |     73,558      100.00
+
+. tab hdp_all
+
+    hdp_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     63,659       86.42       86.42
+          1 |     10,004       13.58      100.00
+------------+-----------------------------------
+      Total |     73,663      100.00
+
+. 
+. 
+. tab HYPERTENSJON_ALENE
+
+HYPERTENSJO |
+    N_ALENE |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      1,498      100.00      100.00
+------------+-----------------------------------
+      Total |      1,498      100.00
+
+. tab HYPERTENSJON_KRONISK
+
+HYPERTENSJO |
+  N_KRONISK |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        373      100.00      100.00
+------------+-----------------------------------
+      Total |        373      100.00
+
+. tab MORS_ALDER
+
+ MORS_ALDER |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         17 |         59        0.08        0.08
+         18 |        176        0.24        0.32
+         19 |        458        0.62        0.94
+         20 |        734        1.00        1.94
+         21 |      1,008        1.37        3.31
+         22 |      1,386        1.88        5.19
+         23 |      1,865        2.53        7.72
+         24 |      2,519        3.42       11.14
+         25 |      3,199        4.34       15.49
+         26 |      4,094        5.56       21.04
+         27 |      4,911        6.67       27.71
+         28 |      5,518        7.49       35.21
+         29 |      6,061        8.23       43.44
+         30 |      6,318        8.58       52.02
+         31 |      6,321        8.58       60.60
+         32 |      5,875        7.98       68.58
+         33 |      5,238        7.11       75.69
+         34 |      4,518        6.13       81.82
+         35 |      3,851        5.23       87.05
+         36 |      3,078        4.18       91.23
+         37 |      2,227        3.02       94.26
+         38 |      1,562        2.12       96.38
+         39 |      1,047        1.42       97.80
+         40 |        711        0.97       98.76
+         41 |        406        0.55       99.32
+         42 |        234        0.32       99.63
+         43 |        140        0.19       99.82
+         44 |         65        0.09       99.91
+         45 |         29        0.04       99.95
+        917 |         18        0.02       99.98
+        945 |         18        0.02      100.00
+------------+-----------------------------------
+      Total |     73,644      100.00
+
+. tab EKLAMPSI
+
+   EKLAMPSI |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         46      100.00      100.00
+------------+-----------------------------------
+      Total |         46      100.00
+
+. tab PREEKLTIDL
+
+ PREEKLTIDL |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        299      100.00      100.00
+------------+-----------------------------------
+      Total |        299      100.00
+
+. tab HDP
+
+        HDP |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     63,659       86.42       86.42
+          1 |      7,147        9.70       96.12
+          2 |      2,857        3.88      100.00
+------------+-----------------------------------
+      Total |     73,663      100.00
+
+. tab PREEKL
+
+     PREEKL |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      1,652       59.75       59.75
+          2 |        715       25.86       85.61
+          3 |        398       14.39      100.00
+------------+-----------------------------------
+      Total |      2,765      100.00
+
+. 
+. 
+. **GH
+. *control includes pre existing hypertension 
+. gen gh_all=1 if HDP==1
+(66,722 missing values generated)
+
+. replace gh_all=0 if HDP==0
+(63,659 real changes made)
+
+. replace gh_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. *control excludes pre existing hypertension 
+. gen gh_subsamp=1 if HDP==1
+(66,722 missing values generated)
+
+. replace gh_subsamp=0 if HDP==0 & HYPERTENSJON_KRONISK!=1
+(63,554 real changes made)
+
+. replace gh_subsamp=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab gh_subsamp, mis
+
+ gh_subsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     63,554       86.04       86.04
+          1 |      7,147        9.68       95.71
+          . |      3,168        4.29      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. 
+. **PE
+. *control includes pre existing hypertension 
+. gen pe_all=1 if HDP==2
+(71,012 missing values generated)
+
+. replace pe_all=0 if HDP==0
+(63,659 real changes made)
+
+. replace pe_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. 
+. *control excludes pre existing hypertension 
+. gen pe_subsamp=1 if HDP==2
+(71,012 missing values generated)
+
+. replace pe_subsamp=0 if HDP==0 & HYPERTENSJON_KRONISK!=1
+(63,554 real changes made)
+
+. replace pe_subsamp=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab pe_subsamp, mis
+
+ pe_subsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     63,554       86.04       86.04
+          1 |      2,857        3.87       89.90
+          . |      7,458       10.10      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. 
+. 
+. **GDM
+. tab FAAR, mis
+
+       FAAR |      Freq.     Percent        Cum.
+------------+-----------------------------------
+       2002 |      3,796        5.14        5.14
+       2003 |     10,042       13.59       18.73
+       2004 |     10,616       14.37       33.10
+       2005 |     11,422       15.46       48.57
+       2006 |     13,134       17.78       66.35
+       2007 |     12,218       16.54       82.89
+       2008 |      9,966       13.49       96.38
+       2009 |      2,450        3.32       99.70
+          . |        225        0.30      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. tab DIABETES_MELLITUS, mis
+
+DIABETES_ME |
+     LLITUS |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |        318        0.43        0.43
+          2 |        130        0.18        0.61
+          3 |         16        0.02        0.63
+          4 |        623        0.84        1.47
+          5 |         54        0.07        1.54
+          . |     72,728       98.46      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. cap drop gdm_all
+
+. gen gdm_all=0 if FAAR!=.
+(225 missing values generated)
+
+. replace gdm_all=1 if DIABETES_MELLITUS==4
+(623 real changes made)
+
+. replace gdm_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab DIABETES_MELLITUS gdm_all, mis
+
+DIABETES_M |             gdm_all
+   ELLITUS |         0          1          . |     Total
+-----------+---------------------------------+----------
+         1 |       318          0          0 |       318 
+         2 |       130          0          0 |       130 
+         3 |        16          0          0 |        16 
+         4 |         0        623          0 |       623 
+         5 |        54          0          0 |        54 
+         . |    72,503          0        225 |    72,728 
+-----------+---------------------------------+----------
+     Total |    73,021        623        225 |    73,869 
+
+. 
+. tab gdm_all, mis
+
+    gdm_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     73,021       98.85       98.85
+          1 |        623        0.84       99.70
+          . |        225        0.30      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. gen gdm_subsamp=gdm_all
+(225 missing values generated)
+
+. replace gdm_subsamp=. if DIABETES_MELLITUS==1 | DIABETES_MELLITUS==2 | DIABET
+> ES_MELLITUS==3 | DIABETES_MELLITUS==5
+(518 real changes made, 518 to missing)
+
+. replace gdm_subsamp=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab gdm_subsamp, mis
+
+gdm_subsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     72,503       98.15       98.15
+          1 |        623        0.84       98.99
+          . |        743        1.01      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. **maternal depression
+. 
+. tab AA1548
+
+     AA1548 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |          2        0.00        0.00
+          1 |     61,102       85.25       85.25
+          2 |      8,947       12.48       97.74
+          3 |      1,244        1.74       99.47
+          4 |        372        0.52       99.99
+         12 |          5        0.01      100.00
+         23 |          1        0.00      100.00
+------------+-----------------------------------
+      Total |     71,673      100.00
+
+. 
+. *only want values 1-4
+. foreach x of varlist AA1548 AA1549 AA1550 AA1551 AA1552 ///
+> CC1202 CC1203 CC1204 CC1205 CC1206 ///
+> DD837 DD838 DD839 DD840 DD841 {
+  2. recode `x' (0=.) (12=.) (13=.) (14=.) (23=.) (24=.) (34=.)
+  3. }
+(8 changes made to AA1548)
+(12 changes made to AA1549)
+(15 changes made to AA1550)
+(13 changes made to AA1551)
+(27 changes made to AA1552)
+(5 changes made to CC1202)
+(13 changes made to CC1203)
+(15 changes made to CC1204)
+(31 changes made to CC1205)
+(29 changes made to CC1206)
+(2 changes made to DD837)
+(9 changes made to DD838)
+(25 changes made to DD839)
+(24 changes made to DD840)
+(33 changes made to DD841)
+
+. 
+. egen dep_15g=rowmean(AA1548 AA1549 AA1550 AA1551 AA1552)
+(1,332 missing values generated)
+
+. 
+. tab dep_15g if AA1548==., m
+
+    dep_15g |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |         63        2.86        2.86
+       1.25 |         20        0.91        3.77
+   1.333333 |          8        0.36        4.13
+        1.5 |         24        1.09        5.22
+   1.666667 |          6        0.27        5.49
+       1.75 |         29        1.32        6.81
+          2 |        485       22.01       28.81
+       2.25 |         13        0.59       29.40
+   2.333333 |         16        0.73       30.13
+        2.5 |         34        1.54       31.67
+   2.666667 |         19        0.86       32.53
+       2.75 |          3        0.14       32.67
+          3 |        112        5.08       37.75
+       3.25 |          2        0.09       37.84
+   3.333333 |          5        0.23       38.07
+        3.5 |          7        0.32       38.38
+   3.666667 |          2        0.09       38.48
+       3.75 |          1        0.05       38.52
+          4 |         22        1.00       39.52
+   20.66667 |          1        0.05       39.56
+          . |      1,332       60.44      100.00
+------------+-----------------------------------
+      Total |      2,204      100.00
+
+. 
+. egen dep_30g=rowmean(CC1202 CC1203 CC1204 CC1205 CC1206 )
+(3,904 missing values generated)
+
+. egen dep_6m=rowmean(DD837 DD838 DD839 DD840 DD841)
+(9,507 missing values generated)
+
+. tab dep_15g, m
+
+    dep_15g |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     35,627       48.23       48.23
+        1.2 |     13,534       18.32       66.55
+       1.25 |        202        0.27       66.83
+   1.333333 |         25        0.03       66.86
+        1.4 |      9,082       12.29       79.15
+        1.5 |        173        0.23       79.39
+        1.6 |      5,158        6.98       86.37
+   1.666667 |         23        0.03       86.40
+       1.75 |         94        0.13       86.53
+        1.8 |      2,837        3.84       90.37
+          2 |      2,475        3.35       93.72
+        2.2 |        904        1.22       94.94
+       2.25 |         39        0.05       95.00
+   2.333333 |         22        0.03       95.03
+        2.4 |        621        0.84       95.87
+        2.5 |         56        0.08       95.94
+        2.6 |        466        0.63       96.57
+   2.666667 |         24        0.03       96.61
+       2.75 |          8        0.01       96.62
+        2.8 |        324        0.44       97.06
+          3 |        388        0.53       97.58
+        3.2 |        136        0.18       97.76
+       3.25 |          8        0.01       97.78
+   3.333333 |          6        0.01       97.78
+        3.4 |         91        0.12       97.91
+        3.5 |         12        0.02       97.92
+        3.6 |         63        0.09       98.01
+   3.666667 |          2        0.00       98.01
+       3.75 |          3        0.00       98.02
+        3.8 |         32        0.04       98.06
+          4 |        101        0.14       98.20
+   20.66667 |          1        0.00       98.20
+          . |      1,332        1.80      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. *tab ante_dep, m
+. 
+. **this antenatal dep is a mean of depression scores at 15 weeks gestation and
+>  30 weeks gestation
+. egen ante_dep=rowmean(dep_15g dep_30g)
+(266 missing values generated)
+
+. gen ante_depr_all=1 if ante_dep>=2 & ante_dep<.
+(69,624 missing values generated)
+
+. replace ante_depr_all=0 if ante_dep<2
+(69,358 real changes made)
+
+. replace ante_depr_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab ante_depr_all, mis
+
+ante_depr_a |
+         ll |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     69,358       93.89       93.89
+          1 |      4,245        5.75       99.64
+          . |        266        0.36      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. 
+. **this perinatal dep is a mean of depression scores at 15 weeks gestation, 30
+>  weeks gestation and 6 months post partum
+. egen peri_dep=rowmean(dep_15g dep_30g dep_6m)
+(200 missing values generated)
+
+. gen depr_all=1 if peri_dep>=2 & peri_dep<.
+(70,260 missing values generated)
+
+. replace depr_all=0 if peri_dep<2
+(70,060 real changes made)
+
+. replace depr_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab depr_all, mis
+
+   depr_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     70,060       94.84       94.84
+          1 |      3,609        4.89       99.73
+          . |        200        0.27      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. **depr_subsamp: Control: never depressed
+. gen depr_subsamp=1 if depr_all==1
+(70,260 missing values generated)
+
+. replace depr_subsamp=0 if peri_dep<2
+(70,060 real changes made)
+
+. replace depr_subsamp=. if livebirth==0
+(0 real changes made)
+
+. 
+. 
+. **ante_depr_subsamp: Control: never depressed
+. gen ante_depr_subsamp=1 if ante_depr_all==1
+(69,624 missing values generated)
+
+. replace ante_depr_subsamp=0 if peri_dep<2
+(70,060 real changes made)
+
+. replace ante_depr_subsamp=. if livebirth==0
+(0 real changes made)
+
+. 
+. 
+. **Premature rupture of membranes
+. tab VANNAVGANG
+
+ VANNAVGANG |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      5,343       50.91       50.91
+          2 |      4,981       47.46       98.36
+          3 |        172        1.64      100.00
+------------+-----------------------------------
+      Total |     10,496      100.00
+
+. gen rup_memb=1 if VANNAVGANG==1 | VANNAVGANG==2 | VANNAVGANG==3
+(63,373 missing values generated)
+
+. replace rup_memb=0 if VANNAVGANG==.
+(63,373 real changes made)
+
+. replace rup_memb=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab rup_memb, mis
+
+   rup_memb |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     63,373       85.79       85.79
+          1 |     10,496       14.21      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. **Induction of labour
+. tab FSTART
+
+     FSTART |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     58,325       79.20       79.20
+          2 |     10,099       13.71       92.92
+          3 |      5,216        7.08      100.00
+------------+-----------------------------------
+      Total |     73,640      100.00
+
+. tab KSNITT
+
+     KSNITT |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      3,885       36.09       36.09
+          2 |      6,831       63.45       99.54
+          9 |         50        0.46      100.00
+------------+-----------------------------------
+      Total |     10,766      100.00
+
+. 
+. tab KSNITT FSTART
+
+           |              FSTART
+    KSNITT |         1          2          3 |     Total
+-----------+---------------------------------+----------
+         1 |       152         26      3,706 |     3,884 
+         2 |     3,509      1,860      1,461 |     6,830 
+         9 |         1          0         49 |        50 
+-----------+---------------------------------+----------
+     Total |     3,662      1,886      5,216 |    10,764 
+
+. 
+. gen induction=1 if FSTART==2
+(63,770 missing values generated)
+
+. replace induction=0 if FSTART==1 | FSTART==3
+(63,541 real changes made)
+
+. replace induction=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab induction, mis
+
+  induction |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     63,541       86.02       86.02
+          1 |     10,099       13.67       99.69
+          . |        229        0.31      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. **Caesarian section
+. gen cs=0 if FAAR!=.
+(225 missing values generated)
+
+. replace cs=1 if KSNITT!=.
+(10,766 real changes made)
+
+. replace cs=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab cs, mis
+
+         cs |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     62,878       85.12       85.12
+          1 |     10,766       14.57       99.70
+          . |        225        0.30      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. tab DD20
+
+       DD20 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     55,125       85.62       85.62
+          2 |      9,255       14.38      100.00
+------------+-----------------------------------
+      Total |     64,380      100.00
+
+. tab DD20 cs, m
+
+           |                cs
+      DD20 |         0          1          . |     Total
+-----------+---------------------------------+----------
+         1 |    54,977         81         67 |    55,125 
+         2 |       171      9,065         19 |     9,255 
+         . |     7,730      1,620        139 |     9,489 
+-----------+---------------------------------+----------
+     Total |    62,878     10,766        225 |    73,869 
+
+. 
+. corr cs DD20
+(obs=64,294)
+
+             |       cs     DD20
+-------------+------------------
+          cs |   1.0000
+        DD20 |   0.9840   1.0000
+
+
+. **Emergency c-section
+. tab KSNITT, mis
+
+     KSNITT |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      3,885        5.26        5.26
+          2 |      6,831        9.25       14.51
+          9 |         50        0.07       14.57
+          . |     63,103       85.43      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. gen em_cs=1 if KSNITT==2
+(67,038 missing values generated)
+
+. replace em_cs=0 if cs==0 // no c-section
+(62,878 real changes made)
+
+. replace em_cs=. if livebirth==0
+(0 real changes made)
+
+. ta em_cs, mis
+
+      em_cs |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     62,878       85.12       85.12
+          1 |      6,831        9.25       94.37
+          . |      4,160        5.63      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. **Elective c-section
+. gen el_cs=1 if KSNITT==1
+(69,984 missing values generated)
+
+. replace el_cs=0 if cs==0 // no c-section
+(62,878 real changes made)
+
+. replace el_cs=. if livebirth==0
+(0 real changes made)
+
+. ta el_cs, mis
+
+      el_cs |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     62,878       85.12       85.12
+          1 |      3,885        5.26       90.38
+          . |      7,106        9.62      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. **************************************************************************
+. **OUTCOMES MORE RELATED TO OFFSPRING (THE INDEX PREGNANCY)
+. **************************************************************************
+. **STILL NEED TO EXCLUDE THOSE THAT WERE NOT A LIVEBIRTH**
+. **WILL NEED TO REPLACE WITH MISSING FOR ALL IN THIS SECTION**
+. 
+. **gestational age
+. tab SVLEN
+
+      SVLEN |      Freq.     Percent        Cum.
+------------+-----------------------------------
+         15 |          2        0.00        0.00
+         20 |          1        0.00        0.00
+         21 |          2        0.00        0.01
+         22 |          2        0.00        0.01
+         23 |         13        0.02        0.03
+         24 |         18        0.02        0.05
+         25 |         19        0.03        0.08
+         26 |         37        0.05        0.13
+         27 |         43        0.06        0.19
+         28 |         59        0.08        0.27
+         29 |         60        0.08        0.35
+         30 |         88        0.12        0.47
+         31 |        117        0.16        0.63
+         32 |        192        0.26        0.89
+         33 |        294        0.40        1.29
+         34 |        470        0.64        1.93
+         35 |        719        0.98        2.91
+         36 |      1,438        1.96        4.87
+         37 |      3,304        4.51        9.38
+         38 |      8,642       11.78       21.16
+         39 |     16,429       22.40       43.57
+         40 |     21,072       28.73       72.30
+         41 |     14,639       19.96       92.26
+         42 |      5,506        7.51       99.77
+         43 |        129        0.18       99.95
+         44 |         33        0.04       99.99
+         45 |          2        0.00       99.99
+         46 |          2        0.00      100.00
+         47 |          2        0.00      100.00
+------------+-----------------------------------
+      Total |     73,334      100.00
+
+. gen ga_all=SVLEN
+(535 missing values generated)
+
+. **STILL NEED TO EXCLUDE THOSE THAT WERE NOT A LIVEBIRTH**
+. sum ga_all
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+      ga_all |     73,334    39.47506    1.838627         15         47
+
+. replace ga_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. 
+. **gestational age with the following exclusions
+. /*
+> - Non-live birth
+> - Multiple births
+> - Elective caesarian section
+> - Physician initiated delivery (induction)
+> */
+. gen ga_subsamp=ga_all
+(535 missing values generated)
+
+. replace ga_subsamp=. if el_cs==1
+(3,866 real changes made, 3,866 to missing)
+
+. replace ga_subsamp=. if induction==1
+(10,025 real changes made, 10,025 to missing)
+
+. replace ga_subsamp=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace ga_subsamp=. if livebirth==0
+(0 real changes made)
+
+. 
+. 
+. **very preterm
+. gen vpretb_all=.
+(73,869 missing values generated)
+
+. replace vpretb_all=1 if SVLEN <34
+(947 real changes made)
+
+. replace vpretb_all=0 if SVLEN >=37 & SVLEN <42
+(64,086 real changes made)
+
+. **STILL NEED TO EXCLUDE THOSE THAT WERE NOT A LIVEBIRTH**
+. replace vpretb_all=. if livebirth==0
+(0 real changes made)
+
+. tab vpretb_all, mis
+
+ vpretb_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     64,086       86.76       86.76
+          1 |        947        1.28       88.04
+          . |      8,836       11.96      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. 
+. **very preterm with the following exclusions
+. /*
+> - Non-live birth
+> - Multiple births
+> - Elective caesarian section
+> - Physician initiated delivery (induction)
+> */
+. gen vpretb_subsamp=vpretb_all
+(8,836 missing values generated)
+
+. replace vpretb_subsamp=. if el_cs==1
+(3,598 real changes made, 3,598 to missing)
+
+. replace vpretb_subsamp=. if induction==1
+(6,837 real changes made, 6,837 to missing)
+
+. replace vpretb_subsamp=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace vpretb_subsamp=. if livebirth==0
+(0 real changes made)
+
+. 
+. 
+. **preterm birth
+. 
+. **STILL NEED TO EXCLUDE THOSE THAT WERE NOT A LIVEBIRTH**
+. tab pretb_all, mis
+
+  pretb_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     64,086       86.76       86.76
+          1 |      3,574        4.84       91.59
+          . |      6,209        8.41      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. **preterm birth with the following exclusions
+. /*
+> - Non-live birth
+> - Multiple births
+> - Elective caesarian section
+> - Physician initiated delivery (induction)
+> */
+. gen pretb_subsamp=pretb_all
+(6,209 missing values generated)
+
+. replace pretb_subsamp=. if el_cs==1
+(3,789 real changes made, 3,789 to missing)
+
+. replace pretb_subsamp=. if induction==1
+(7,399 real changes made, 7,399 to missing)
+
+. replace pretb_subsamp=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace pretb_subsamp=. if livebirth==0
+(0 real changes made)
+
+. 
+. *postterm
+. gen posttb_all=1 if SVLEN >=42 & SVLEN <.
+(68,195 missing values generated)
+
+. replace posttb_all=0 if SVLEN >=37 & SVLEN <42
+(64,086 real changes made)
+
+. **STILL NEED TO EXCLUDE THOSE THAT WERE NOT A LIVEBIRTH**
+. replace posttb_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. 
+. tab posttb_all, mis
+
+ posttb_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     64,086       86.76       86.76
+          1 |      5,674        7.68       94.44
+          . |      4,109        5.56      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. 
+. **post birth with the following exclusions
+. /*
+> - Non-live birth
+> - Multiple births
+> - Elective caesarian section
+> - Physician initiated delivery (induction)
+> */
+. gen posttb_subsamp=posttb_all
+(4,109 missing values generated)
+
+. replace posttb_subsamp=. if el_cs==1
+(3,594 real changes made, 3,594 to missing)
+
+. replace posttb_subsamp=. if induction==1
+(9,405 real changes made, 9,405 to missing)
+
+. replace posttb_subsamp=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace posttb_subsamp=. if livebirth==0
+(0 real changes made)
+
+. 
+. /*
+> *BW
+> sum VEKT
+> gen bw=VEKT
+> **STILL NEED TO EXCLUDE THOSE THAT WERE NOT A LIVEBIRTH**
+> 
+> * BW in sex-specific z-score
+> tab KJONN, mis
+> egen zbw_boys = std(bw) if KJONN==1
+> sum zbw_boys
+> egen zbw_girls = std(bw) if KJONN==2
+> sum zbw_girls
+> egen zbw_all = rowfirst(zbw_boys zbw_girls)
+> 
+> *Check this is right
+> replace zbw_all=. if zbw_all<-5 | zbw_all>5
+> sum zbw_all
+> 
+> gen zbw_subsamp=zbw_all
+> replace zbw_subsamp=. if pretb_all==1
+> */
+. 
+. 
+. *LBW
+. *note the control in Marias definitio includes participants with a bw>=4500 b
+> ut I've currently stayed with our own mrpreg definitions
+. gen lbw_all=1 if bw<2500 & bw!=.
+(71,782 missing values generated)
+
+. replace lbw_all=0 if bw>=2500 & bw<=4500
+(68,384 real changes made)
+
+. tab lbw_all, mis
+
+    lbw_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     68,384       92.57       92.57
+          1 |      2,087        2.83       95.40
+          . |      3,398        4.60      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. replace lbw_all=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace lbw_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. 
+. gen lbw_subsamp=lbw_all
+(3,398 missing values generated)
+
+. replace lbw_subsamp=. if pretb_all==1
+(3,491 real changes made, 3,491 to missing)
+
+. 
+. 
+. *HBW
+. *note the control in Marias definitio includes participants with a bw<=2500 b
+> ut I've currently stayed with our own mrpreg definitions
+. gen hbw_all=1 if bw>4500 & bw!=.
+(70,818 missing values generated)
+
+. replace hbw_all=0 if bw>=2500 & bw<=4500
+(68,384 real changes made)
+
+. tab hbw_all, mis
+
+    hbw_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     68,384       92.57       92.57
+          1 |      3,051        4.13       96.70
+          . |      2,434        3.30      100.00
+------------+-----------------------------------
+      Total |     73,869      100.00
+
+. replace hbw_all=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace hbw_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. gen hbw_subsamp=hbw_all
+(2,434 missing values generated)
+
+. replace hbw_subsamp=. if pretb_all==1
+(1,937 real changes made, 1,937 to missing)
+
+. 
+. 
+. **FOR SGA AND LGA we use a separate excel sheet with the mean and sd of bw by
+>  gestational week and sex from babies born in Normway during the moba period
+. merge m:1 ga_all offspring_sex using "N:\durable\file-import\p582-member-grou
+> p\referencebw.dta"
+(label offspring_sex already defined)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                           541
+        from master                       540  (_merge==1)
+        from using                          1  (_merge==2)
+
+    Matched                            73,329  (_merge==3)
+    -----------------------------------------
+
+. 
+. list offspring_sex ga_all BW_MEAN BW_SD _merge in 1/10
+
+     +-------------------------------------------------------------+
+     | offspr~x   ga_all     BW_MEAN       BW_SD            _merge |
+     |-------------------------------------------------------------|
+  1. |     Male       15           .           .   Master only (1) |
+  2. |   Female       15           .           .   Master only (1) |
+  3. |     Male       20           .           .   Master only (1) |
+  4. |   Female       21           .           .   Master only (1) |
+  5. |   Female       21           .           .   Master only (1) |
+     |-------------------------------------------------------------|
+  6. |     Male       22   497.43503   479.73264       Matched (3) |
+  7. |   Female       22   448.42657   170.16307       Matched (3) |
+  8. |     Male       23   616.95874   433.65469       Matched (3) |
+  9. |     Male       23   616.95874   433.65469       Matched (3) |
+ 10. |     Male       23   616.95874   433.65469       Matched (3) |
+     +-------------------------------------------------------------+
+
+. 
+. order offspring_sex ga_all BW_MEAN BW_SD bw _merge
+
+. 
+. gen zbw_ref=(bw-BW_MEAN)/BW_SD
+(645 missing values generated)
+
+. replace zbw_ref=. if bw==. | BW_MEAN==. | ga_all==.
+(0 real changes made)
+
+. 
+. sum zbw_ref
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+     zbw_ref |     73,225     .061683    .9700305  -6.056283    6.33679
+
+. 
+. hist zbw_ref
+(bin=48, start=-6.0562835, width=.25818902)
+
+. 
+. gen sga=1 if zbw_ref<-1.282 & zbw_ref!=.
+(68,494 missing values generated)
+
+. replace sga=0 if zbw_ref>=-1.282 & zbw_ref!=.
+(67,849 real changes made)
+
+. 
+. tab sga, m
+
+        sga |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     67,849       91.85       91.85
+          1 |      5,376        7.28       99.13
+          . |        645        0.87      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. 
+. gen lga=1 if zbw_ref>1.282 & zbw_ref!=.
+(66,289 missing values generated)
+
+. replace lga=0 if zbw_ref<=1.282 & zbw_ref!=.
+(65,644 real changes made)
+
+. 
+. tab lga, m
+
+        lga |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     65,644       88.86       88.86
+          1 |      7,581       10.26       99.13
+          . |        645        0.87      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. 
+. sum bw if lga==1, d
+
+                             bw
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%         3250           1836
+ 5%         3820           2008
+10%         4010           2045       Obs               7,581
+25%         4200           2127       Sum of wgt.       7,581
+
+50%         4410                      Mean           4407.385
+                        Largest       Std. dev.      375.0788
+75%         4620           6200
+90%         4840           6210       Variance       140684.1
+95%         4980           6290       Skewness      -.6084648
+99%         5300           6300       Kurtosis       6.624045
+
+. 
+. list bw offspring_sex ga_all ga_subsamp if lga==1 & bw<2000
+
+       +-------------------------------------+
+       |   bw   offspr~x   ga_all   ga_sub~p |
+       |-------------------------------------|
+  217. | 1836       Male       29         29 |
+       +-------------------------------------+
+
+. 
+. replace sga=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace sga=. if livebirth==0
+(0 real changes made)
+
+. 
+. replace lga=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace lga=. if livebirth==0
+(0 real changes made)
+
+. 
+. 
+. **Apgar at 1 min
+. tab APGAR1
+
+     APGAR1 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |         70        0.10        0.10
+          1 |        180        0.24        0.34
+          2 |        298        0.41        0.74
+          3 |        354        0.48        1.23
+          4 |        528        0.72        1.94
+          5 |        827        1.12        3.07
+          6 |      1,542        2.10        5.16
+          7 |      2,880        3.91        9.08
+          8 |      7,743       10.53       19.60
+          9 |     52,810       71.79       91.39
+         10 |      6,332        8.61      100.00
+------------+-----------------------------------
+      Total |     73,564      100.00
+
+. gen apgar1=APGAR1
+(306 missing values generated)
+
+. replace apgar1=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace apgar1=. if livebirth==0
+(0 real changes made)
+
+. 
+. sum apgar1
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+      apgar1 |     73,564    8.673414    1.180954          0         10
+
+. 
+. **LOW APGAR SCORE at 1 (<7)
+. gen lowapgar1=1 if apgar1<7 & apgar1!=.
+(70,071 missing values generated)
+
+. replace lowapgar1=0 if apgar1>=7 & apgar1!=.
+(69,765 real changes made)
+
+. replace lowapgar1=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace lowapgar1=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab lowapgar1, mis
+
+  lowapgar1 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     69,765       94.44       94.44
+          1 |      3,799        5.14       99.59
+          . |        306        0.41      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. 
+. **Apgar at 5 min
+. tab APGAR5
+
+     APGAR5 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |         37        0.05        0.05
+          1 |         27        0.04        0.09
+          2 |         25        0.03        0.12
+          3 |         77        0.10        0.23
+          4 |         97        0.13        0.36
+          5 |        189        0.26        0.61
+          6 |        412        0.56        1.17
+          7 |        924        1.26        2.43
+          8 |      3,005        4.08        6.51
+          9 |     29,034       39.46       45.98
+         10 |     39,746       54.02      100.00
+------------+-----------------------------------
+      Total |     73,573      100.00
+
+. gen apgar5=APGAR5
+(297 missing values generated)
+
+. sum apgar5
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+      apgar5 |     73,573    9.424476    .8331534          0         10
+
+. replace apgar5=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace apgar5=. if livebirth==0
+(0 real changes made)
+
+. 
+. **LOW APGAR SCORE at 5 (<7)
+. gen lowapgar5=1 if apgar5<7 & apgar5!=.
+(73,006 missing values generated)
+
+. replace lowapgar5=0 if apgar5>=7 & apgar5!=.
+(72,709 real changes made)
+
+. replace lowapgar5=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace lowapgar5=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab lowapgar5, mis
+
+  lowapgar5 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     72,709       98.43       98.43
+          1 |        864        1.17       99.60
+          . |        297        0.40      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. 
+. **nicu
+. gen nicu=1 if  OVERFLYTTET==1
+(67,129 missing values generated)
+
+. replace nicu=0 if OVERFLYTTET==2
+(64,305 real changes made)
+
+. replace nicu=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace nicu=. if livebirth==0
+(0 real changes made)
+
+. 
+. tab nicu, m
+
+       nicu |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     64,305       87.05       87.05
+          1 |      6,741        9.13       96.18
+          . |      2,824        3.82      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. 
+. **Breastfeed initiation
+. **THIS INFORMATION IS OBTAINED FROM THE QUESTIONNAIRE ADMINISTERED WHEN THE C
+> HILD IS 6 MONTHS
+. *tab VERSJON_SKJEMA4_TBL1
+. 
+. tab DD42
+
+       DD42 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     63,431      100.00      100.00
+------------+-----------------------------------
+      Total |     63,431      100.00
+
+. *case initiated breastfeeding/did not
+. *also chosen DD49 as thats 0-<1 months
+. gen bf_ini=1 if DD42==1 | DD49==1
+(10,138 missing values generated)
+
+. replace bf_ini=0 if DD42==. & DD49==.
+(10,138 real changes made)
+
+. 
+. 
+. tab bf_ini, mis
+
+     bf_ini |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     10,138       13.72       13.72
+          1 |     63,732       86.28      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. 
+. 
+. **BF DURING
+. /*
+> What has your child been given to drink during the first 6 months of his/her 
+> life?
+> 0 months DD49 1 month=DD50 month2=DD51, month3=DD52, month4=DD53, month5=DD54
+> month6==DD55
+> 
+> */
+. *0=0 months, 1=1-3, 2=4-6, 3=6+
+. tab DD49
+
+       DD49 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     56,385      100.00      100.00
+------------+-----------------------------------
+      Total |     56,385      100.00
+
+. tab DD50
+
+       DD50 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     56,577      100.00      100.00
+------------+-----------------------------------
+      Total |     56,577      100.00
+
+. tab DD51
+
+       DD51 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     55,341      100.00      100.00
+------------+-----------------------------------
+      Total |     55,341      100.00
+
+. tab DD52
+
+       DD52 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     53,619      100.00      100.00
+------------+-----------------------------------
+      Total |     53,619      100.00
+
+. 
+. *gen bf_dur_4c=0 if (DD49==1 | DD42==1 | DD42==.)
+. *replace bf_dur_4c=1 if (DD50==1 | DD51==1 | DD52==1) & (DD53!=1 | DD54!=1 | 
+> DD55!=1)
+. *replace bf_dur_4c=2 if (DD53==1 | DD54==1 | DD55==1)
+. *****************************************************************************
+> ***
+. *** MODIFIED BY PEIYUAN HUANG
+. * 0 = 0 to <1
+. gen bf_dur_4c=0 if (DD49==1 | DD42==1 | DD42==.)
+
+. * 1 = 1 to <3
+. replace bf_dur_4c=1 if (DD50==1 | DD51==1) & (DD52!=1 & DD53!=1 & DD54!=1 & D
+> D55!=1)
+(3,328 real changes made)
+
+. * 2 = 3 to <6
+. replace bf_dur_4c=2 if (DD52==1 | DD53==1 | DD54==1) & DD55!=1
+(5,956 real changes made)
+
+. * 3 = >=6
+. replace bf_dur_4c=3 if (DD55==1)
+(49,576 real changes made)
+
+. *****************************************************************************
+> ***
+. 
+. tab bf_dur_4c, mis
+
+  bf_dur_4c |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     15,010       20.32       20.32
+          1 |      3,328        4.51       24.82
+          2 |      5,956        8.06       32.89
+          3 |     49,576       67.11      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. **breast feeding established, cases>=2 months, controls<2 momths
+. gen bf_est=1 if DD51==1 | DD52==1 | DD53==1 | DD54==1 | DD55==1
+(16,429 missing values generated)
+
+. replace bf_est=0 if DD51!=1 & DD52!=1 & DD53!=1 & DD54!=1 & DD55!=1
+(16,429 real changes made)
+
+. 
+. **breast feeding sustained cases>=6 months, controls <6 months
+. *controls include those who didnt breastfeed at all
+. gen bf_sus=1 if DD55==1
+(24,294 missing values generated)
+
+. replace bf_sus=0 if DD55!=1 
+(24,294 real changes made)
+
+. tab bf_sus
+
+     bf_sus |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     24,294       32.89       32.89
+          1 |     49,576       67.11      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. 
+. count if (DD53==1 | DD54==1) & DD55!=1
+  3,741
+
+. count if bf_sus==1 & bf_dur_4c==2
+  0
+
+. tab bf_ini, m
+
+     bf_ini |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     10,138       13.72       13.72
+          1 |     63,732       86.28      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. tab bf_dur_4c, m
+
+  bf_dur_4c |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     15,010       20.32       20.32
+          1 |      3,328        4.51       24.82
+          2 |      5,956        8.06       32.89
+          3 |     49,576       67.11      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. tab bf_est, m
+
+     bf_est |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     16,429       22.24       22.24
+          1 |     57,441       77.76      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. tab bf_sus, m
+
+     bf_sus |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     24,294       32.89       32.89
+          1 |     49,576       67.11      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. 
+. list DD42 DD49 DD50 DD51 DD52 DD52 bf_est bf_ini bf_dur_4c in 1/20
+
+     +----------------------------------------------------------------------+
+     | DD42   DD49   DD50   DD51   DD52   DD52   bf_est   bf_ini   bf_du~4c |
+     |----------------------------------------------------------------------|
+  1. |    1      1      1      1      1      1        1        1          3 |
+  2. |    .      1      1      1      1      1        1        1          3 |
+  3. |    1      1      1      .      .      .        0        1          1 |
+  4. |    .      .      .      .      .      .        0        0          0 |
+  5. |    .      .      .      .      .      .        0        0          0 |
+     |----------------------------------------------------------------------|
+  6. |    .      .      .      .      .      .        0        0          0 |
+  7. |    .      .      .      .      .      .        0        0          0 |
+  8. |    .      .      .      .      .      .        0        0          0 |
+  9. |    .      .      .      .      .      .        0        0          0 |
+ 10. |    .      .      .      .      .      .        0        0          0 |
+     |----------------------------------------------------------------------|
+ 11. |    .      .      .      .      .      .        0        0          0 |
+ 12. |    1      1      1      1      1      1        1        1          2 |
+ 13. |    .      .      .      .      .      .        0        0          0 |
+ 14. |    .      .      .      .      .      .        0        0          0 |
+ 15. |    .      .      .      .      .      .        0        0          0 |
+     |----------------------------------------------------------------------|
+ 16. |    .      1      1      1      1      1        1        1          3 |
+ 17. |    .      .      .      .      .      .        0        0          0 |
+ 18. |    .      .      .      .      .      .        0        0          0 |
+ 19. |    .      .      .      .      .      .        0        0          0 |
+ 20. |    1      1      1      1      1      1        1        1          2 |
+     +----------------------------------------------------------------------+
+
+. **AS the qu only goes up to 6 months I've not derived the continuosu versions
+>  of the bf variables as they'd have a weird distribution from being truncated
+>  at 6m (I think).
+. 
+. 
+. **ANAEMIA prev preg
+. tab AA572
+
+      AA572 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      2,304      100.00      100.00
+------------+-----------------------------------
+      Total |      2,304      100.00
+
+. gen anaemia_prev=1 if AA572==1
+(71,566 missing values generated)
+
+. replace anaemia_prev=0 if AA572!=1
+(71,566 real changes made)
+
+. tab anaemia_prev, mis
+
+anaemia_pre |
+          v |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     71,566       96.88       96.88
+          1 |      2,304        3.12      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. replace anaemia_prev=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace anaemia_prev=. if livebirth==0
+(0 real changes made)
+
+. 
+. 
+. 
+. **ANAEMIA duringpreg
+. tab AA573
+
+      AA573 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |      2,006      100.00      100.00
+------------+-----------------------------------
+      Total |      2,006      100.00
+
+. gen anaemia_preg_all=1 if AA573==1
+(71,864 missing values generated)
+
+. replace anaemia_preg_all=0 if AA573!=1
+(71,864 real changes made)
+
+. tab anaemia_preg_all, mis
+
+anaemia_pre |
+      g_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     71,864       97.28       97.28
+          1 |      2,006        2.72      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. replace anaemia_preg_all=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace anaemia_preg_all=. if livebirth==0
+(0 real changes made)
+
+. 
+. 
+. 
+. 
+. gen anaemia_preg_subsamp=1 if AA573==1 & anaemia_prev!=1
+(72,644 missing values generated)
+
+. replace anaemia_preg_subsamp=0 if AA573!=1 & anaemia_prev!=1
+(70,340 real changes made)
+
+. tab anaemia_preg_subsamp, mis
+
+anaemia_pre |
+  g_subsamp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     70,340       95.22       95.22
+          1 |      1,226        1.66       96.88
+          . |      2,304        3.12      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. replace anaemia_preg_subsamp=. if from_multiplebirth==1
+(0 real changes made)
+
+. replace anaemia_preg_subsamp=. if livebirth==0
+(0 real changes made)
+
+. 
+. /****************************************************************************
+> ***
+> ADAPTED FROM: "4_upd_ga.do" by Dr Gemma Clayton
+> *****************************************************************************
+> **/
+. sum ga_all, d
+
+                           ga_all
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%           33             15
+ 5%           37             15
+10%           38             20       Obs              73,335
+25%           39             21       Sum of wgt.      73,335
+
+50%           40                      Mean           39.47516
+                        Largest       Std. dev.      1.838825
+75%           41             46
+90%           41             47       Variance       3.381276
+95%           42             47       Skewness      -2.210274
+99%           42             47       Kurtosis       14.29006
+
+. 
+. count if ga_all<22
+  5
+
+. list bw if ga_all<22
+
+       +------+
+       |   bw |
+       |------|
+    1. | 3260 |
+    2. | 3914 |
+    3. |    . |
+    4. |    . |
+    5. |    . |
+       +------+
+
+. 
+. *keep if ga_all<22
+. 
+. *order ga_all bw ga_subsamp pretb_all pretb_subsamp vpretb_all vpretb_subsamp
+>  sga lga
+. 
+. replace ga_all=. if ga_all<22
+(5 real changes made, 5 to missing)
+
+. 
+. replace ga_subsamp=. if ga_all==.
+(4 real changes made, 4 to missing)
+
+. 
+. tab pretb_subsamp, m
+
+pretb_subsa |
+         mp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     53,790       72.82       72.82
+          1 |      2,682        3.63       76.45
+          . |     17,398       23.55      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. tab pretb_all, m
+
+  pretb_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     64,086       86.76       86.76
+          1 |      3,574        4.84       91.59
+          . |      6,210        8.41      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. replace pretb_subsamp=. if ga_all==.
+(4 real changes made, 4 to missing)
+
+. replace pretb_all=. if ga_all==.
+(5 real changes made, 5 to missing)
+
+. 
+. tab vpretb_subsamp, m
+
+vpretb_subs |
+        amp |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     53,790       72.82       72.82
+          1 |        808        1.09       73.91
+          . |     19,272       26.09      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. tab vpretb_all, m
+
+ vpretb_all |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     64,086       86.76       86.76
+          1 |        947        1.28       88.04
+          . |      8,837       11.96      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. replace vpretb_subsamp=. if ga_all==.
+(4 real changes made, 4 to missing)
+
+. replace vpretb_all=. if ga_all==.
+(5 real changes made, 5 to missing)
+
+. 
+. sum sga if ga_all==.
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+         sga |          0
+
+. sum lga if ga_all==.
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+         lga |          0
+
+. 
+. *****************************************************************************
+> ***
+. 
+. order M_ID_2552 PREG_ID_2552 F_ID_2552 offspring_sex livebirth from_multipleb
+> irth pregloss misc_all misc_subsamp  s_misc_all s_misc_subsamp r_misc_all r_m
+> isc_subsamp sb_all sb_subsamp  sb_index_all sb_index_subsamp misc_index_all m
+> isc_index_subsamp hdp_all hdp_subsamp gh_all gh_subsamp pe_all pe_subsamp  gd
+> m_all gdm_subsamp depr_all depr_subsamp ante_depr_all ante_depr_subsamp rup_m
+> emb induction cs em_cs el_cs  bw zbw_all zbw_subsamp lbw_all lbw_subsamp hbw_
+> all hbw_subsamp ga_all ga_subsamp vpretb_all vpretb_subsamp  pretb_all pretb_
+> subsamp  posttb_all posttb_subsamp sga lga apgar1 lowapgar1 apgar5 lowapgar5 
+> nicu bf_ini bf_est bf_sus bf_dur_4c anaemia_preg_all anaemia_preg_subsamp ana
+> emia_prev 
+
+. 
+. *keep M_ID_2552 PREG_ID_2552 F_ID_2552 offspring_sex livebirth from_multipleb
+> irth pregloss misc_all misc_subsamp  s_misc_all s_misc_subsamp r_misc_all r_m
+> isc_subsamp sb_all sb_subsamp  sb_index_all sb_index_subsamp misc_index_all m
+> isc_index_subsamp hdp_all hdp_subsamp gh_all gh_subsamp pe_all pe_subsamp  gd
+> m_all gdm_subsamp depr_all depr_subsamp ante_depr_all ante_depr_subsamp rup_m
+> emb induction cs em_cs el_cs  bw zbw_all zbw_subsamp lbw_all lbw_subsamp hbw_
+> all hbw_subsamp ga_all ga_subsamp vpretb_all vpretb_subsamp  pretb_all pretb_
+> subsamp  posttb_all posttb_subsamp sga lga apgar1 lowapgar1 apgar5 lowapgar5 
+> nicu bf_ini bf_est bf_sus bf_dur_4c anaemia_preg_all anaemia_preg_subsamp ana
+> emia_prev
+. 
+. save "N:\durable\projects\Ran_MoBa_var\dat_MRPREG_out.dta", replace
+file N:\durable\projects\Ran_MoBa_var\dat_MRPREG_out.dta saved
+
+. 
+. 
+end of do-file

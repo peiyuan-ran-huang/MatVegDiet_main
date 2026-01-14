@@ -1,0 +1,733 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      17.0
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2021 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-STATA-PC        https://www.stata.com
+                                   979-696-4600        stata@stata.com
+
+Stata license: 40-user 32-core network, expiring 21 Mar 2025
+Serial number: 501809321456
+  Licensed to: Universitetet i Oslo
+               Universitetet i Oslo
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+
+Running C:\PROGRA~1\Stata17\sysprofile.do ...
+
+. do M:/p582-peiyuanh/MainAssocAnalysis/MoBa_01b_derive_MRPREG_cov.do 
+
+. /****************************************************************************
+> ***
+> ADAPTED FROM: "cp_0_gen_covars.do" by Dr Gemma Clayton
+> *****************************************************************************
+> **/
+. 
+. ** creates covariables that match the moba tab of covariables_defintion (stor
+> ed in MR PREG onedrive)
+. 
+. /****************************************************************************
+> ***
+> ** FILE 1: MBRN, creates matage_yrs, parity_cat5, parity_b_multi, mateth_b_ot
+> her, offspring_sex (to be merged with D to create sex_b_male)
+> 
+> *****************************************************************************
+> **/
+. 
+. *import delimited "N:\durable\projects\covariables_cp\2023-05-09_gemmalc_PDB2
+> 552_MBRN_541_v12_id-11.txt", clear case(preserve)
+. 
+. use "N:\durable\projects\Ran_MoBa_var\dat_MRPREG_out.dta", clear
+
+. 
+. ** maternal age at delivery
+. gen matage_yrs=MORS_ALDER
+(226 missing values generated)
+
+. sum matage_yrs, d
+
+                         matage_yrs
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%           20             17
+ 5%           22             17
+10%           24             17       Obs              73,644
+25%           27             17       Sum of wgt.      73,644
+
+50%           30                      Mean           30.66925
+                        Largest       Std. dev.      20.44424
+75%           33            945
+90%           36            945       Variance       417.9671
+95%           38            945       Skewness       41.77776
+99%           41            945       Kurtosis       1841.334
+
+. 
+. ** parity
+. gen parity_cat5=PARITET_5
+(226 missing values generated)
+
+. 
+. ** partiy
+. gen parity_b_multi=1 if parity_cat5>=1 & parity_cat5!=.
+(34,744 missing values generated)
+
+. replace parity_b_multi=0 if parity_cat==0
+(34,518 real changes made)
+
+. 
+. ** ethnicity
+. 
+. tab FODELAND_KAT_NOR_GBD
+
+FODELAND_KA |
+  T_NOR_GBD |      Freq.     Percent        Cum.
+------------+-----------------------------------
+        201 |     66,764       92.01       92.01
+        202 |      3,369        4.64       96.65
+        203 |        811        1.12       97.77
+        204 |        231        0.32       98.09
+        205 |        318        0.44       98.53
+        206 |        189        0.26       98.79
+        207 |        612        0.84       99.63
+        208 |        268        0.37      100.00
+------------+-----------------------------------
+      Total |     72,562      100.00
+
+. /*
+> 0201 = Norway
+> 0202 = High Income
+> 0203 = Central Europe, Eastern Europe and Central Asia
+> 0204 = Sub-Saharan Africa
+> 0205 = North Africa and Middle East
+> 0206 = South Asia
+> 0207 = South East Asia, East Asia and Oceania
+> 0208 = Latin America and Caribbean
+> */
+. 
+. gen mateth_b_other=0 if FODELAND_KAT_NOR_GBD==201 | FODELAND_KAT_NOR_GBD==202
+>  | FODELAND_KAT_NOR_GBD==203
+(2,926 missing values generated)
+
+. replace mateth_b_other=1 if FODELAND_KAT_NOR_GBD==204 | FODELAND_KAT_NOR_GBD=
+> =205 | FODELAND_KAT_NOR_GBD==206 | FODELAND_KAT_NOR_GBD==207 | FODELAND_KAT_N
+> OR_GBD==208
+(1,618 real changes made)
+
+. 
+. 
+. label define mateth_b_other 0 "Norway, High Income or Central Europe, Eastern
+>  Europe and Central Asia" 1 "Sub-Saharan Africa, North Africa and Middle East
+> , South Asia, South East Asia, East Asia and Oceania, Latin America and Carib
+> bean"
+
+. 
+. label val mateth_b_other mateth_b_other
+
+. 
+. ** offspring sex
+. tab KJONN
+
+      KJONN |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |          1        0.00        0.00
+          1 |     37,696       51.19       51.19
+          2 |     35,947       48.81      100.00
+------------+-----------------------------------
+      Total |     73,644      100.00
+
+. gen offspring_sex_mbrn=KJONN if KJONN==1 | KJONN==2
+(227 missing values generated)
+
+. gen sex_b_male=1 if KJONN==1
+(36,174 missing values generated)
+
+. replace sex_b_male=0 if KJONN==2
+(35,947 real changes made)
+
+. 
+. *keep PREG_ID_2552 matage_yrs parity_cat5 parity_b_multi mateth_b_other offsp
+> ring_sex_mbrn sex_b_male
+. 
+. *cd "N:\durable\projects\Gemmapregoutcomes\GWAS PIPELINE\data"
+. 
+. *save "mbrn_covar_f", replace
+. 
+. /****************************************************************************
+> ***
+> ** FILE 2: QU 1 0-3 months, creates matbmi_kgm2, matedu_cat3, matedu_b_uni, m
+> atsmoke_b_early (to be merged with C qu to create matsmoke_b_yes)
+> *****************************************************************************
+> **/
+. 
+. 
+. *import delimited "N:\durable\projects\covariables_cp\2023-05-09_gemmalc_PDB2
+> 552_Q1_v12_id-12.txt", clear case(preserve)
+. 
+. ** maternal bmi
+. *what did you weigh when you became pregnant 
+. tab AA85
+
+       AA85 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          3 |          1        0.00        0.00
+          4 |          3        0.00        0.01
+          5 |          5        0.01        0.01
+          6 |          5        0.01        0.02
+          7 |          4        0.01        0.03
+          8 |          1        0.00        0.03
+         24 |          2        0.00        0.03
+         32 |          1        0.00        0.03
+         36 |          1        0.00        0.03
+         37 |          6        0.01        0.04
+         38 |          6        0.01        0.05
+         39 |          8        0.01        0.06
+         40 |         24        0.03        0.09
+         41 |         18        0.03        0.12
+         42 |         43        0.06        0.18
+         43 |         72        0.10        0.28
+         44 |         69        0.10        0.38
+         45 |        160        0.22        0.60
+         46 |        164        0.23        0.83
+         47 |        242        0.34        1.16
+         48 |        378        0.53        1.69
+         49 |        442        0.62        2.31
+         50 |        951        1.33        3.64
+         51 |        585        0.82        4.45
+         52 |      1,237        1.73        6.18
+         53 |      1,289        1.80        7.98
+         54 |      1,452        2.03       10.00
+         55 |      2,199        3.07       13.07
+         56 |      1,862        2.60       15.67
+         57 |      2,102        2.93       18.60
+         58 |      2,888        4.03       22.63
+         59 |      2,071        2.89       25.52
+         60 |      3,815        5.32       30.84
+         61 |      1,784        2.49       33.33
+         62 |      3,091        4.31       37.64
+         63 |      2,991        4.17       41.81
+         64 |      2,674        3.73       45.54
+         65 |      3,609        5.03       50.58
+         66 |      1,890        2.64       53.21
+         67 |      2,353        3.28       56.50
+         68 |      2,676        3.73       60.23
+         69 |      1,871        2.61       62.84
+         70 |      2,971        4.14       66.98
+         71 |      1,194        1.67       68.65
+         72 |      1,993        2.78       71.43
+         73 |      1,577        2.20       73.63
+         74 |      1,475        2.06       75.69
+         75 |      1,927        2.69       78.37
+         76 |      1,102        1.54       79.91
+         77 |        879        1.23       81.14
+         78 |      1,124        1.57       82.71
+         79 |        835        1.16       83.87
+         80 |      1,392        1.94       85.81
+         81 |        477        0.67       86.48
+         82 |        793        1.11       87.58
+         83 |        674        0.94       88.52
+         84 |        598        0.83       89.36
+         85 |        908        1.27       90.63
+         86 |        525        0.73       91.36
+         87 |        434        0.61       91.96
+         88 |        445        0.62       92.58
+         89 |        383        0.53       93.12
+         90 |        605        0.84       93.96
+         91 |        219        0.31       94.27
+         92 |        344        0.48       94.75
+         93 |        310        0.43       95.18
+         94 |        259        0.36       95.54
+         95 |        402        0.56       96.10
+         96 |        242        0.34       96.44
+         97 |        219        0.31       96.75
+         98 |        240        0.33       97.08
+         99 |        155        0.22       97.30
+        100 |        222        0.31       97.61
+        101 |         84        0.12       97.72
+        102 |        130        0.18       97.90
+        103 |        117        0.16       98.07
+        104 |        108        0.15       98.22
+        105 |        152        0.21       98.43
+        106 |         90        0.13       98.56
+        107 |         77        0.11       98.66
+        108 |         75        0.10       98.77
+        109 |         57        0.08       98.85
+        110 |        120        0.17       99.02
+        111 |         40        0.06       99.07
+        112 |         62        0.09       99.16
+        113 |         50        0.07       99.23
+        114 |         32        0.04       99.27
+        115 |         62        0.09       99.36
+        116 |         49        0.07       99.43
+        117 |         44        0.06       99.49
+        118 |         36        0.05       99.54
+        119 |         21        0.03       99.57
+        120 |         56        0.08       99.65
+        121 |         16        0.02       99.67
+        122 |         20        0.03       99.70
+        123 |         21        0.03       99.73
+        124 |         21        0.03       99.75
+        125 |         29        0.04       99.79
+        126 |         21        0.03       99.82
+        127 |         20        0.03       99.85
+        128 |         13        0.02       99.87
+        129 |          9        0.01       99.88
+        130 |         12        0.02       99.90
+        131 |          4        0.01       99.91
+        132 |          7        0.01       99.91
+        133 |          2        0.00       99.92
+        134 |          7        0.01       99.93
+        135 |          6        0.01       99.94
+        136 |          2        0.00       99.94
+        137 |          2        0.00       99.94
+        138 |          5        0.01       99.95
+        139 |          3        0.00       99.95
+        140 |          7        0.01       99.96
+        142 |          4        0.01       99.97
+        143 |          1        0.00       99.97
+        144 |          1        0.00       99.97
+        145 |          4        0.01       99.98
+        147 |          1        0.00       99.98
+        150 |          5        0.01       99.98
+        152 |          1        0.00       99.99
+        153 |          1        0.00       99.99
+        155 |          1        0.00       99.99
+        157 |          2        0.00       99.99
+        160 |          3        0.00      100.00
+        173 |          1        0.00      100.00
+        180 |          1        0.00      100.00
+        573 |          1        0.00      100.00
+------------+-----------------------------------
+      Total |     71,684      100.00
+
+. *replace AA85="" if AA85=="NA"
+. destring AA85, replace
+AA85 already numeric; no replace
+
+. sum AA85 //in kg
+
+    Variable |        Obs        Mean    Std. dev.       Min        Max
+-------------+---------------------------------------------------------
+        AA85 |     71,684    68.02083    13.10847          3        573
+
+. gen mat_weight=AA85
+(2,186 missing values generated)
+
+. replace mat_weight=. if AA85<30 | AA85>200
+(22 real changes made, 22 to missing)
+
+. 
+. *height in cm
+. tab AA87
+
+       AA87 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |          3        0.00        0.00
+          5 |          2        0.00        0.01
+         15 |          3        0.00        0.01
+         16 |         16        0.02        0.03
+         17 |          6        0.01        0.04
+         56 |          2        0.00        0.04
+         57 |          1        0.00        0.05
+         58 |          2        0.00        0.05
+         59 |          1        0.00        0.05
+         60 |          8        0.01        0.06
+         61 |          4        0.01        0.07
+         62 |         11        0.02        0.08
+         63 |          6        0.01        0.09
+         64 |          4        0.01        0.09
+         65 |          9        0.01        0.11
+         66 |          2        0.00        0.11
+         67 |         10        0.01        0.12
+         68 |          6        0.01        0.13
+         69 |          6        0.01        0.14
+         70 |         10        0.01        0.15
+         71 |         13        0.02        0.17
+         72 |         14        0.02        0.19
+         73 |          6        0.01        0.20
+         74 |          5        0.01        0.21
+         75 |          2        0.00        0.21
+         76 |          2        0.00        0.21
+         78 |          3        0.00        0.22
+         81 |          1        0.00        0.22
+        108 |          1        0.00        0.22
+        116 |          1        0.00        0.22
+        123 |          1        0.00        0.22
+        138 |          1        0.00        0.22
+        140 |          2        0.00        0.23
+        142 |          1        0.00        0.23
+        143 |          1        0.00        0.23
+        144 |          3        0.00        0.23
+        145 |         10        0.01        0.25
+        146 |          9        0.01        0.26
+        147 |         17        0.02        0.28
+        148 |         25        0.03        0.32
+        149 |         29        0.04        0.36
+        150 |        184        0.25        0.61
+        151 |         52        0.07        0.68
+        152 |        187        0.26        0.94
+        153 |        206        0.28        1.22
+        154 |        222        0.31        1.53
+        155 |        448        0.62        2.14
+        156 |        468        0.64        2.79
+        157 |        670        0.92        3.71
+        158 |      1,341        1.85        5.56
+        159 |        842        1.16        6.72
+        160 |      3,817        5.25       11.97
+        161 |      1,199        1.65       13.62
+        162 |      2,623        3.61       17.23
+        163 |      3,743        5.15       22.39
+        164 |      3,714        5.11       27.50
+        165 |      5,251        7.23       34.73
+        166 |      2,099        2.89       37.62
+        167 |      4,614        6.35       43.97
+        168 |      6,554        9.02       52.99
+        169 |      3,636        5.01       58.00
+        170 |      7,235        9.96       67.96
+        171 |      2,228        3.07       71.03
+        172 |      4,302        5.92       76.95
+        173 |      3,503        4.82       81.77
+        174 |      2,935        4.04       85.81
+        175 |      2,824        3.89       89.70
+        176 |      1,996        2.75       92.45
+        177 |        993        1.37       93.82
+        178 |      1,685        2.32       96.14
+        179 |        620        0.85       96.99
+        180 |      1,233        1.70       98.69
+        181 |        298        0.41       99.10
+        182 |        273        0.38       99.47
+        183 |        182        0.25       99.72
+        184 |         88        0.12       99.84
+        185 |         60        0.08       99.93
+        186 |         28        0.04       99.97
+        187 |         14        0.02       99.98
+        188 |          5        0.01       99.99
+        189 |          2        0.00       99.99
+        190 |          3        0.00      100.00
+        198 |          1        0.00      100.00
+------------+-----------------------------------
+      Total |     72,637      100.00
+
+. *replace AA87="" if AA87=="NA"
+. destring AA87, replace
+AA87 already numeric; no replace
+
+. 
+. sum AA87, d
+
+                            AA87
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%          153              1
+ 5%          158              1
+10%          160              1       Obs              72,637
+25%          164              5       Sum of wgt.      72,637
+
+50%          168                      Mean           167.8411
+                        Largest       Std. dev.      7.952428
+75%          172            190
+90%          176            190       Variance       63.24111
+95%          178            190       Skewness      -6.572138
+99%          181            198       Kurtosis       104.7601
+
+. 
+. gen mat_height_cm=AA87 
+(1,233 missing values generated)
+
+. replace mat_height_cm=. if mat_height_cm<135
+(161 real changes made, 161 to missing)
+
+. 
+. gen mat_height_m= mat_height_cm/100
+(1,394 missing values generated)
+
+. gen matbmi_kgm2=mat_weight/(mat_height_m^2)
+(2,507 missing values generated)
+
+. 
+. sum matbmi_kgm2, d
+
+                         matbmi_kgm2
+-------------------------------------------------------------
+      Percentiles      Smallest
+ 1%     17.57813       12.49872
+ 5%       18.937       13.21178
+10%     19.70553       13.59045       Obs              71,363
+25%     21.10727       13.59045       Sum of wgt.      71,363
+
+50%     23.12467                      Mean            24.0656
+                        Largest       Std. dev.      4.314698
+75%     25.95156        54.6875
+90%     29.75778       55.46875       Variance       18.61662
+95%     32.66079       55.77037       Skewness       1.419407
+99%      38.4083       57.80347       Kurtosis       6.041485
+
+. 
+. * maternal education 0=less than university degree/1=completed a university d
+> egree
+. 
+. gen matedu_b_uni=1 if AA1124==5 | AA1124==6
+(29,177 missing values generated)
+
+. replace matedu_b_uni=0 if AA1124==1 | AA1124==2 | AA1124==3 | AA1124==4
+(24,811 real changes made)
+
+. replace matedu_b_uni=0 if matedu_b_uni!=. & AA1125!=.
+(1,137 real changes made)
+
+. replace matedu_b_uni=0 if matedu_b_uni!=. & AA1125!=.
+(0 real changes made)
+
+. 
+. label var matedu_b_uni "Degree or higher"
+
+. 
+. * maternal smoking (from A qu)
+. tab AA1356
+
+     AA1356 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     61,237       91.23       91.23
+          2 |      1,987        2.96       94.19
+          3 |      3,845        5.73       99.92
+          4 |         11        0.02       99.93
+          5 |          2        0.00       99.93
+          6 |         44        0.07      100.00
+------------+-----------------------------------
+      Total |     67,126      100.00
+
+. 
+. gen matsmoke_b_early=1 if (AA1356==2 | AA1356==3)
+(68,038 missing values generated)
+
+. replace matsmoke_b_early=0 if AA1356==1
+(61,237 real changes made)
+
+. 
+. 
+. *keep PREG_ID_2552 mat_weight mat_height_cm mat_height_m matbmi_kgm2 matedu_b
+> _uni matsmoke_b_early
+. 
+. *cd "N:\durable\projects\Gemmapregoutcomes\GWAS PIPELINE\data"
+. 
+. *save "A_covar_f", replace
+. 
+. 
+. 
+. /****************************************************************************
+> ***
+> ** FILE 3: QU 3, creates matsmoke_b_during (to be merged with A qu to create 
+> matsmoke_b_yes), matalcohol_b_yes
+> *****************************************************************************
+> **/
+. 
+. *import delimited "N:\durable\projects\covariables_cp\2023-05-09_gemmalc_PDB2
+> 552_Q3_v12_id-13.txt", case(preserve) clear
+. 
+. destring CC1037, replace force
+CC1037 already numeric; no replace
+
+. destring CC1157, replace force
+CC1157 already numeric; no replace
+
+. destring CC1158, replace force
+CC1158 already numeric; no replace
+
+. destring CC1159, replace force
+CC1159 already numeric; no replace
+
+. 
+. ** matsmoke_b_during
+. tab CC1037
+
+     CC1037 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     64,689       92.95       92.95
+          2 |      1,489        2.14       95.09
+          3 |      3,387        4.87       99.95
+          4 |         10        0.01       99.97
+          6 |         23        0.03      100.00
+------------+-----------------------------------
+      Total |     69,598      100.00
+
+. 
+. gen matsmoke_b_during= 1 if CC1037==2 | CC1037==3 |  CC1037==4 | CC1037==5 | 
+> CC1037==6 | CC1037==7
+(68,961 missing values generated)
+
+. replace matsmoke_b_during=0 if CC1037==1
+(64,689 real changes made)
+
+. 
+. 
+. ** maternal alcohol
+. 
+. gen mat_alcohol_1=1 if CC1157==1 | CC1157==2 | CC1157==3 | CC1157==4
+(71,895 missing values generated)
+
+. replace mat_alcohol_1=0 if CC1157==5 | CC1157==6 | CC1157==7
+(60,770 real changes made)
+
+. replace mat_alcohol_1=. if CC1157==0 
+(0 real changes made)
+
+. 
+. tab mat_alcohol_1, m
+
+mat_alcohol |
+         _1 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     60,770       82.27       82.27
+          1 |      1,975        2.67       84.94
+          . |     11,125       15.06      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. 
+. gen mat_alcohol_2=1 if CC1158==1 | CC1158==2 | CC1158==3 | CC1158==4
+(73,488 missing values generated)
+
+. replace mat_alcohol_2=0 if CC1158==5 | CC1158==6 | CC1158==7
+(60,351 real changes made)
+
+. replace mat_alcohol_2=. if CC1158==0 
+(0 real changes made)
+
+. 
+. tab mat_alcohol_2, m
+
+mat_alcohol |
+         _2 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     60,351       81.70       81.70
+          1 |        382        0.52       82.22
+          . |     13,137       17.78      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. 
+. gen mat_alcohol_3=1 if CC1159==1 | CC1159==2 | CC1159==3 | CC1159==4
+(73,453 missing values generated)
+
+. replace mat_alcohol_3=0 if CC1159==5 | CC1159==6 | CC1159==7
+(60,367 real changes made)
+
+. replace mat_alcohol_3=. if CC1159==0 
+(0 real changes made)
+
+. 
+. tab mat_alcohol_3, m
+
+mat_alcohol |
+         _3 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     60,367       81.72       81.72
+          1 |        417        0.56       82.29
+          . |     13,086       17.71      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. 
+. gen mat_alcohol_any=1 if mat_alcohol_1==1 | mat_alcohol_2==1 | mat_alcohol_3=
+> =1
+(71,693 missing values generated)
+
+. replace mat_alcohol_any=0 if mat_alcohol_1==0 & mat_alcohol_2==0 & mat_alcoho
+> l_3==0
+(58,053 real changes made)
+
+. 
+. 
+. tab mat_alcohol_any, m
+
+mat_alcohol |
+       _any |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     58,053       78.59       78.59
+          1 |      2,177        2.95       81.54
+          . |     13,640       18.46      100.00
+------------+-----------------------------------
+      Total |     73,870      100.00
+
+. label var mat_alcohol_any "any alcohol during pregnancy"
+
+. 
+. 
+. 
+. *keep PREG_ID_2552 matsmoke_b_during mat_alcohol_any
+. 
+. *cd "N:\durable\projects\Gemmapregoutcomes\GWAS PIPELINE\data"
+. 
+. *save "C_covar_f", replace
+. 
+. 
+. 
+. 
+. /****************************************************************************
+> ***
+> ** FILE 4: QU 4, updates offspring_sex to make sex_b_male
+> *****************************************************************************
+> **/
+. 
+. *import delimited "N:\durable\projects\covariables_cp\2023-05-09_gemmalc_PDB2
+> 552_Q4_6months_v12_id-14.txt" , case(preserve) clear 
+. 
+. tab DD12
+
+       DD12 |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          1 |     32,811       51.02       51.02
+          2 |     31,496       48.98      100.00
+------------+-----------------------------------
+      Total |     64,307      100.00
+
+. *1=BOY, 2=GIRL
+. 
+. gen offspring_sex_d=1 if DD12==1
+(41,059 missing values generated)
+
+. replace offspring_sex_d=0 if DD12==2
+(31,496 real changes made)
+
+. 
+. *keep PREG_ID_2552 offspring_sex_d
+. 
+. *cd "N:\durable\projects\Gemmapregoutcomes\GWAS PIPELINE\data"
+. 
+. *save "D_covar_f", replace
+. 
+. 
+. 
+. /****************************************************************************
+> ***
+> ** FILE 4: Combine these
+> *****************************************************************************
+> **/
+. 
+. ***COMBINED VARS
+. *cd "N:\durable\projects\Gemmapregoutcomes\GWAS PIPELINE\data"
+. 
+. *use "mbrn_covar_f", clear
+. *merge m:m PREG_ID_2552 using "A_covar_f"
+. *drop _merge
+. *merge m:m PREG_ID_2552 using "C_covar_f"
+. *drop _merge
+. *merge m:m PREG_ID_2552 using "D_covar_f"
+. *drop _merge
+. 
+. *drop offspring_sex_d
+. 
+. save "N:\durable\projects\Ran_MoBa_var\dat_MRPREG_out_cov.dta", replace
+file N:\durable\projects\Ran_MoBa_var\dat_MRPREG_out_cov.dta saved
+
+. 
+end of do-file
