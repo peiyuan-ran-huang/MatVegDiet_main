@@ -1,0 +1,242 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      Stata 18.0
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2023 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: Unlimited-user 2-core network, expiring 29 Jan 2025
+Serial number: 501809305331
+  Licensed to: IT Services
+               University of Bristol
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+
+Running C:\PROGRA~1\Stata18\profile.do ...
+
+. do ALSPAC_01b_derive_MRPREG_out_zbw.do 
+
+. /****************************************************************************
+> ***
+> ADAPTED FROM: "3.alspac_dataset_mrpreg_20240611_zanthro.do" in the MR-PREG fo
+> lder
+> *****************************************************************************
+> **/
+. 
+.         *install zanthro
+. *sysdir set PLUS C:\Users\rt20627\Desktop\Stata_packages
+. *ssc install zanthro
+. *ssc install: "zanthro" not found at SSC, type search zanthro
+. *(To find all packages at SSC that start with z, type ssc describe z)
+. *search zanthro
+. *package name:  dm0004_1.pkg
+. *from:  http://www.stata-journal.com/software/sj13-2/
+. *  checking dm0004_1 consistency and verifying not already installed...
+. *installing into C:\Users\rt20627\Desktop\Stata_packages\...
+. *installation complete.
+. 
+. cd "Z:\working\data\ALSPAC"
+Z:\working\data\ALSPAC
+
+. 
+. clear
+
+. 
+. *load the file from R
+. use pheno_all_Rvars, clear
+(Written by R.              )
+
+. 
+. *code as NA (.) those negative values
+. replace kz021 = . if kz021 == -1 | kz021==-2
+(325 real changes made, 325 to missing)
+
+. 
+. *create var with age in years and BW in kg 
+. gen age_baby=0
+
+. gen bwt_kg=kz030/1000
+(1,390 missing values generated)
+
+. 
+. *zanthro with UK-WHO charts
+. *gen zbw_UKWHO=.
+. *replace zbw_UKWHO=zanthro(bwt_kg,wa,UKWHOpreterm), xvar(age_baby) gender(kz0
+> 21) gencode(male=1, female=2) gestage(ga_all) if singleton==1 & kz010>=2
+. *(zanthro does not seem to work with gen var replace if, but with egen only, 
+> so I do not know how to do restrict zanthro function to singletons and live b
+> irths in STATA)
+. egen zbw_UKWHO=zanthro(bwt_kg,wa,UKWHOpreterm), xvar(age_baby) gender(kz021) 
+> gencode(male=1, female=2) gestage(ga_all)
+WARNING: Maximum value in your gestational age variable is 47 weeks.
+(Z values generated for 13323 cases) 
+(gender was assumed to be coded male=1, female=2)
+(age was assumed to be in years)
+(Z values can be missing because age is nonpositive or otherwise
+ out of range for the chart code, the gender variable is missing,
+ gestation age is missing or places corrected age out of range
+ for the chart code, or the Z value has an absolute value >=5)
+(1,421 missing values generated)
+
+. *WARNING: Maximum value in your gestational age variable is 47 weeks.
+. *(Z values generated for 13484  cases) 
+. *(gender was assumed to be coded male=1, female=2)
+. *(age was assumed to be in years)
+. *(Z values can be missing because age is nonpositive or otherwise
+.  * out of range for the chart code, the gender variable is missing,
+.  * gestation age is missing or places corrected age out of range
+.  * for the chart code, or the Z value has an absolute value >=5)
+. *(2,161 missing values generated)
+. 
+. *zanthro with UK charts
+. *gen zbw_UK=.
+. *replace zbw_UK=zanthro(bwt_kg,wa,UK), xvar(age_baby) gender(kz021) gencode(m
+> ale=1, female=2) gestage(ga_all)  if singleton==1 & kz010>=2
+. *(zanthro does not seem to work with gen var replace if, but with egen only, 
+> so I do not know how to do restrict zanthro function to singletons and live b
+> irths in STATA)
+. egen zbw_UK=zanthro(bwt_kg,wa,UK), xvar(age_baby) gender(kz021) gencode(male=
+> 1, female=2) gestage(ga_all)
+WARNING: Maximum value in your gestational age variable is 47 weeks.
+(Z values generated for 13322 cases) 
+(gender was assumed to be coded male=1, female=2)
+(age was assumed to be in years)
+(Z values can be missing because age is nonpositive or otherwise
+ out of range for the chart code, the gender variable is missing,
+ gestation age is missing or places corrected age out of range
+ for the chart code, or the Z value has an absolute value >=5)
+(1,422 missing values generated)
+
+. *WARNING: Maximum value in your gestational age variable is 47 weeks.
+. *(Z values generated for 13483 cases) 
+. *(gender was assumed to be coded male=1, female=2)
+. *(age was assumed to be in years)
+. *(Z values can be missing because age is nonpositive or otherwise
+.  * out of range for the chart code, the gender variable is missing,
+.  * gestation age is missing or places corrected age out of range
+.  * for the chart code, or the Z value has an absolute value >=5)
+. *(2,162 missing values generated)
+. 
+. 
+. *check distributions of the z-scores
+. hist(zbw_UK)
+(bin=41, start=-4.3719521, width=.22346626)
+
+. *(bin=41, start=-4.3719521, width=.22346626)
+. 
+. hist(zbw_UKWHO)
+(bin=41, start=-4.8573427, width=.23117385)
+
+. *(bin=41, start=-4.8573427, width=.23117385)
+. 
+. 
+. * SGA
+. gen sga_UKWHO=.
+(14,744 missing values generated)
+
+. replace sga_UKWHO=1 if zbw_UKWHO <-1.282
+(1,058 real changes made)
+
+. replace sga_UKWHO=0 if zbw_UKWHO>=-1.282 & zbw_UKWHO!=.
+(12,265 real changes made)
+
+. 
+. gen sga_UK=.
+(14,744 missing values generated)
+
+. replace sga_UK=1 if zbw_UK <-1.282
+(1,051 real changes made)
+
+. replace sga_UK=0 if zbw_UK>=-1.282 & zbw_UK!=.
+(12,271 real changes made)
+
+. 
+. * LGA
+. gen lga_UKWHO=.
+(14,744 missing values generated)
+
+. replace lga_UKWHO=1 if zbw_UKWHO >1.282 & zbw_UKWHO!=.
+(1,466 real changes made)
+
+. replace lga_UKWHO=0 if zbw_UKWHO <=1.282
+(11,857 real changes made)
+
+. 
+. gen lga_UK=.
+(14,744 missing values generated)
+
+. replace lga_UK=1 if zbw_UK >1.282 & zbw_UK!=.
+(1,450 real changes made)
+
+. replace lga_UK=0 if zbw_UK <=1.282
+(11,872 real changes made)
+
+. 
+. 
+. tab1 sga_UKWHO
+
+-> tabulation of sga_UKWHO  
+
+  sga_UKWHO |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     12,265       92.06       92.06
+          1 |      1,058        7.94      100.00
+------------+-----------------------------------
+      Total |     13,323      100.00
+
+. tab1 sga_UK
+
+-> tabulation of sga_UK  
+
+     sga_UK |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     12,271       92.11       92.11
+          1 |      1,051        7.89      100.00
+------------+-----------------------------------
+      Total |     13,322      100.00
+
+. tab1 lga_UKWHO
+
+-> tabulation of lga_UKWHO  
+
+  lga_UKWHO |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     11,857       89.00       89.00
+          1 |      1,466       11.00      100.00
+------------+-----------------------------------
+      Total |     13,323      100.00
+
+. tab1 lga_UK
+
+-> tabulation of lga_UK  
+
+     lga_UK |      Freq.     Percent        Cum.
+------------+-----------------------------------
+          0 |     11,872       89.12       89.12
+          1 |      1,450       10.88      100.00
+------------+-----------------------------------
+      Total |     13,322      100.00
+
+. 
+. keep aln qlet sga_UKWHO sga_UK lga_UKWHO lga_UK
+
+. 
+. save pheno_all_vars.dta, replace
+file pheno_all_vars.dta saved
+
+. export delimited pheno_all_vars.csv, replace
+file pheno_all_vars.csv saved
+
+. 
+end of do-file

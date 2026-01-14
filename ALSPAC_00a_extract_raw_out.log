@@ -1,0 +1,250 @@
+
+  ___  ____  ____  ____  ____ ®
+ /__    /   ____/   /   ____/      Stata 18.0
+___/   /   /___/   /   /___/       MP—Parallel Edition
+
+ Statistics and Data Science       Copyright 1985-2023 StataCorp LLC
+                                   StataCorp
+                                   4905 Lakeway Drive
+                                   College Station, Texas 77845 USA
+                                   800-782-8272        https://www.stata.com
+                                   979-696-4600        service@stata.com
+
+Stata license: Unlimited-user 2-core network, expiring 29 Jan 2025
+Serial number: 501809305331
+  Licensed to: IT Services
+               University of Bristol
+
+Notes:
+      1. Stata is running in batch mode.
+      2. Unicode is supported; see help unicode_advice.
+      3. More than 2 billion observations are allowed; see help obs_advice.
+      4. Maximum number of variables is set to 5,000 but can be increased;
+          see help set_maxvar.
+
+
+Running C:\PROGRA~1\Stata18\profile.do ...
+
+. do "C:/Users/zd20208/OneDrive - University of Bristol/Desktop/2020 Bristol Ph
+> D/Main Project/Data/Scripts/MainAssocAnalysis/ALSPAC_00a_extract_raw_out.do" 
+
+. /****************************************************************************
+> ***
+> ADAPTED FROM: "1.syntax_template_20240610.do" written by the MR-PREG team
+> *****************************************************************************
+> **/
+. 
+. *****************************************************************************
+> ***
+. ********** ALSPAC SYNTAX - MR-PREG **********
+. *********************************************
+. 
+. cd "Z:\working\data\ALSPAC"
+Z:\working\data\ALSPAC
+
+. 
+. * Script updatad by AS - updated to latest ALSPAC syntax
+. 
+. *** Syntax template for direct users preparing datasets using child and paren
+> t based datasets.
+. 
+. * Updated 16th May 2024 - updated withdrawal of consent frequencies (child c)
+. 
+. 
+. *****************************************************************************
+> *****************************************************************************
+> ******************************************************************
+. * This template is based on that used by the data buddy team and they include
+>  a number of variables by default.
+. * To ensure the file works we suggest you keep those in and just add any rele
+> vant variables that you need for your project.
+. * To add data other than that included by default you will need to add the re
+> lvant files and pathnames in each of the match commands below.
+. * There is a separate command for mothers questionnaires, mothers clinics, pa
+> rtner, mothers providing data on the child and data provided by the child the
+> mselves.
+. * Each has different withdrawal of consent issues so they must be considered 
+> separately.
+. * You will need to replace 'YOUR PATHNAME' in each section with your working 
+> directory pathname.
+. 
+. *****************************************************************************
+> *****************************************************************************
+> *******************************************************************.
+. 
+. * G0 Mother (pregnancy) based files - include here all files related to the p
+> regnancy and/or mother
+. 
+. * If no mother variables are required, KEEP this section and remove the instr
+> uction below to run it..
+. 
+. clear
+
+. set maxvar 32767        
+
+
+. use "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Other\Cohort Profile
+> \mz_6a.dta", clear
+
+. sort aln
+
+. gen in_mz=1
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\a_3e.dta", keepus(a006 a525) nogen 
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         6,703
+        from master                     6,703  
+        from using                          0  
+
+    Matched                            13,545  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\b_4f.dta", keepus(b003 b007 - b012 b023 b024 b032 b122 b123 b370 b65
+> 0 b663 - b667 b923 b925  b043-b046 b100 b101 b104-b105) nogen
+(label aln already defined)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         7,058
+        from master                     7,058  
+        from using                          0  
+
+    Matched                            13,190  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\c_8a.dta", keepus(c101 c600 c645a c755 c765 c800 - c804 c994 c052 c0
+> 53 c090-c092) nogen
+(label aln already defined)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         7,830
+        from master                     7,830  
+        from using                          0  
+
+    Matched                            12,418  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\d_4b.dta", keepus(dw042 d010 d010a d171 d171a) nogen
+(label aln already defined)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         7,800
+        from master                     7,800  
+        from using                          0  
+
+    Matched                            12,448  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\e_4f.dta", keepus(e390 e691 e695 e100 e101) nogen
+(label aln already defined)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         8,538
+        from master                     8,538  
+        from using                          0  
+
+    Matched                            11,710  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\f_2b.dta", keepus(f085 f088 f200 f253 f253a) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         9,038
+        from master                     9,038  
+        from using                          0  
+
+    Matched                            11,210  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\g_5c.dta", keepus(g145 g146 g153 g154 g155 g333 g333a) nogen
+(label aln already defined)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         9,938
+        from master                     9,938  
+        from using                          0  
+
+    Matched                            10,310  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\h_6d.dta", keepus(h100 h101 h104a h104b h104c h104d h104e h115f h243
+>  h243a) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                        10,610
+        from master                    10,610  
+        from using                          0  
+
+    Matched                             9,638  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\j_5b.dta", keepus(j130 j131b j132b j133b j134b j135b j136b j137 j333
+>  j333a) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                        10,747
+        from master                    10,747  
+        from using                          0  
+
+    Matched                             9,501  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\k_r1b.dta", keepus(k1220 k1221 k1231 k1241 k1251 k1261 k1271 k1281 k
+> 1306 k4033) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         5,657
+        from master                     5,657  
+        from using                          0  
+
+    Matched                            14,591  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\l_r1b.dta", keepus(l3280 l4033) nogen
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         5,698
+        from master                     5,698  
+        from using                          0  
+
+    Matched                            14,550  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\m_2a.dta", keepus(m4060 m4061 m4062 m4063 m4065 m4100 m4101 m4110 m4
+> 120 m4130 m4140 m4150 m4160 m4206) nogen
+(label aln already defined)
+
+    Result                      Number of obs
+    -----------------------------------------
+    Not matched                         5,674
+        from master                     5,674  
+        from using                          0  
+
+    Matched                            14,574  
+    -----------------------------------------
+
+. merge 1:1 aln using "\\ads.bris.ac.uk\filestore\SSCM ALSPAC\Data\Current\Ques
+> t\Mother\n_3a.dta", keepus(n1120 n5000 n5002 n5008) nogen
